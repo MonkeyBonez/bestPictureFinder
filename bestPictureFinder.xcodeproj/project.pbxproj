@@ -18,8 +18,16 @@
 			membershipExceptions = (
 				bestPictureFinderApp.swift,
 				ContentView.swift,
+				IOSAssetPicker.swift,
 			);
 			target = 36A44A162E458F3C0063CD33 /* bestPictureFinderiOS */;
+		};
+		36A44A2A2E4596930063CD33 /* Exceptions for "bestPictureFinder" folder in "bestPictureFinder" target */ = {
+			isa = PBXFileSystemSynchronizedBuildFileExceptionSet;
+			membershipExceptions = (
+				IOSAssetPicker.swift,
+			);
+			target = 3607A8EC2E45832B00A8673D /* bestPictureFinder */;
 		};
 /* End PBXFileSystemSynchronizedBuildFileExceptionSet section */
 
@@ -27,6 +35,7 @@
 		3607A8EF2E45832B00A8673D /* bestPictureFinder */ = {
 			isa = PBXFileSystemSynchronizedRootGroup;
 			exceptions = (
+				36A44A2A2E4596930063CD33 /* Exceptions for "bestPictureFinder" folder in "bestPictureFinder" target */,
 				36A44A232E458F7C0063CD33 /* Exceptions for "bestPictureFinder" folder in "bestPictureFinderiOS" target */,
 			);
 			path = bestPictureFinder;

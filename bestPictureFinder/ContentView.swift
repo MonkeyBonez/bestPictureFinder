@@ -24,6 +24,9 @@ struct ContentView: View {
     @State private var showingAlert = false
     @State private var alertMessage = ""
     @State private var hasError = false
+    #if canImport(UIKit)
+    @State private var showIOSAssetPicker = false
+    #endif
     
     var body: some View {
         NavigationView {
@@ -42,44 +45,40 @@ struct ContentView: View {
                 }
                 .padding(.top)
                 
-                // Photo Selection Button
-                HStack(spacing: 15) {
+                // Selection Buttons
+                HStack(spacing: 12) {
+                    #if canImport(UIKit)
+                    Button {
+                        showIOSAssetPicker = true
+                    } label: {
+                        Label("Pick from Library", systemImage: "photo")
+                            .font(.headline)
+                            .foregroundColor(.white)
+                            .padding()
+                            .background(Color.blue)
+                            .cornerRadius(10)
+                    }
+                    .sheet(isPresented: $showIOSAssetPicker) {
+                        IOSAssetPicker(isPresented: $showIOSAssetPicker) { ids in
+                            Task { await processPHAssetsByIdentifiers(ids) }
+                        }
+                    }
+                    #endif
+
                     PhotosPicker(
                         selection: $selectedPhotos,
                         matching: .images,
                         photoLibrary: .shared()
                     ) {
-                        HStack {
-                            Image(systemName: "photo.on.rectangle.angled")
-                            Text("Select Photos")
-                        }
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .padding()
-                        .background(Color.blue)
-                        .cornerRadius(10)
-                    }
-                    .onChange(of: selectedPhotos) { newItems in
-                        Task {
-                            await processSelectedPhotos(newItems)
-                        }
-                    }
-                    
-                    if !processedImages.isEmpty {
-                        Button(action: {
-                            selectedPhotos.removeAll()
-                            processedImages.removeAll()
-                        }) {
-                            HStack {
-                                Image(systemName: "arrow.clockwise")
-                                Text("Clear")
-                            }
+                        Label("Select (fallback)", systemImage: "photo.on.rectangle.angled")
                             .font(.headline)
                             .foregroundColor(.white)
                             .padding()
-                            .background(Color.red)
+                            .background(Color.green)
                             .cornerRadius(10)
-                        }
+                    }
+                    .onChange(of: selectedPhotos) { newItems in
+                        Task { await processSelectedPhotos(newItems) }
                     }
                 }
                 
@@ -212,11 +211,21 @@ struct ContentView: View {
         processedImages.removeAll()
 
         for (index, item) in items.enumerated() {
-            // Try to resolve the underlying PHAsset identifier first
+            // Try to resolve the underlying PHAsset using the picker's itemIdentifier first
             var asset: PHAsset? = nil
-            if let localId = try? await item.loadTransferable(type: String.self) {
+            if let localId = item.itemIdentifier {
                 let fetchResult = PHAsset.fetchAssets(withLocalIdentifiers: [localId], options: nil)
                 asset = fetchResult.firstObject
+            } else if let assetId: String = try? await item.loadTransferable(type: String.self) {
+                // Some picker contexts may still vend a string identifier
+                let fetchResult = PHAsset.fetchAssets(withLocalIdentifiers: [assetId], options: nil)
+                asset = fetchResult.firstObject
+            } else if let fileURL: URL = try? await item.loadTransferable(type: URL.self) {
+                // As a last resort, fetch by local identifier from resource if resolvable
+                if let assetId = PHAsset.fetchAssets(withALAssetURLs: [fileURL], options: nil).firstObject?.localIdentifier {
+                    let fetchResult = PHAsset.fetchAssets(withLocalIdentifiers: [assetId], options: nil)
+                    asset = fetchResult.firstObject
+                }
             }
 
             if let data = try? await item.loadTransferable(type: Data.self) {
@@ -417,6 +426,47 @@ struct ContentView: View {
             }
         }
     }
+
+    // iOS-only: process assets by identifiers from PHPicker so we don't duplicate assets
+    #if canImport(UIKit)
+    private func processPHAssetsByIdentifiers(_ ids: [String]) async {
+        let fetch = PHAsset.fetchAssets(withLocalIdentifiers: ids, options: nil)
+        var assets: [PHAsset] = []
+        fetch.enumerateObjects { asset, _, _ in assets.append(asset) }
+        await processPHAssets(assets)
+    }
+
+    private func requestImageData(for asset: PHAsset) async -> Data? {
+        await withCheckedContinuation { continuation in
+            let options = PHImageRequestOptions()
+            options.isNetworkAccessAllowed = true
+            options.deliveryMode = .highQualityFormat
+            options.version = .current
+            PHImageManager.default().requestImageDataAndOrientation(for: asset, options: options) { data, _, _, _ in
+                continuation.resume(returning: data)
+            }
+        }
+    }
+
+    private func processPHAssets(_ assets: [PHAsset]) async {
+        isProcessing = true
+        processingProgress = 0
+        totalPhotos = assets.count
+        processedImages.removeAll()
+
+        for (index, asset) in assets.enumerated() {
+            guard let data = await requestImageData(for: asset) else { continue }
+            guard let image = UIImage(data: data) else { continue }
+            let score = await calculateAestheticScore(for: image)
+            let processed = ProcessedImage(image: image, score: score, originalIndex: index, asset: asset)
+            processedImages.append(processed)
+            await MainActor.run { processingProgress = index + 1 }
+        }
+
+        processedImages.sort { $0.score > $1.score }
+        isProcessing = false
+    }
+    #endif
 }
 
 #if canImport(UIKit)
