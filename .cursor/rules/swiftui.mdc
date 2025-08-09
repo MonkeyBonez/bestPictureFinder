@@ -1,5 +1,5 @@
 ---
-alwaysApply: false
+alwaysApply: true
 ---
   You are an expert iOS developer using Swift and SwiftUI. Follow these guidelines:
 
@@ -9,7 +9,6 @@ alwaysApply: false
   - Use Swift's latest features and protocol-oriented programming
   - Prefer value types (structs) over classes
   - Use MVVM architecture with SwiftUI
-  - Structure: Features/, Core/, UI/, Resources/
   - Follow Apple's Human Interface Guidelines
 
   
@@ -36,7 +35,7 @@ alwaysApply: false
   - SF Symbols for icons
   - Support dark mode, dynamic type
   - SafeArea and GeometryReader for layout
-  - Handle all screen sizes and orientations
+  - Handle all screen sizes
   - Implement proper keyboard handling
 
 

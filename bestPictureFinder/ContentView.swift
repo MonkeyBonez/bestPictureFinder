@@ -13,18 +13,9 @@ import PhotosUI
 import UniformTypeIdentifiers
 
 struct ContentView: View {
+    @StateObject private var viewModel = PhotoResultsViewModel()
     @State private var showIOSAssetPicker = false
     @State private var pendingIOSPickerResults: [PHPickerResult] = []
-    @State private var processedImages: [ProcessedImage] = []
-    @State private var selectedIds: Set<String> = []
-    @State private var isProcessing = false
-    @State private var processingProgress = 0
-    @State private var totalPhotos = 0
-    @State private var showingAlert = false
-    @State private var alertMessage = ""
-    @State private var hasError = false
-    @State private var shareItems: [Any] = []
-    @State private var isPresentingShareSheet = false
 
     var body: some View {
         NavigationStack {
@@ -50,12 +41,12 @@ struct ContentView: View {
                 }
 
                 // Processing Status
-                if isProcessing {
+                if viewModel.isProcessing {
                     VStack(spacing: 8) {
                         ProgressView()
                             .scaleEffect(1.2)
-                        if totalPhotos > 0 {
-                            Text("Analyzing photos… \(processingProgress)/\(totalPhotos)")
+                        if viewModel.totalPhotos > 0 {
+                            Text("Analyzing photos… \(viewModel.processingProgress)/\(viewModel.totalPhotos)")
                                 .font(.caption2)
                                 .foregroundColor(.secondary)
                         }
@@ -63,17 +54,17 @@ struct ContentView: View {
                 }
 
                 // Results List
-                if !processedImages.isEmpty {
+                if !viewModel.processedImages.isEmpty {
                     PhotoResultsListView(
-                        processedImages: processedImages,
-                        selectedIds: selectedIds,
-                        onToggleSelection: { img in toggleSelection(for: img) },
-                        onShare: { img in Task { await share(img) } },
-                        onDelete: { img in delete(img) }
+                        processedImages: viewModel.processedImages,
+                        selectedIds: viewModel.selectedIds,
+                        onToggleSelection: { img in viewModel.toggleSelection(id: img.id) },
+                        onShare: { img in Task { await viewModel.share(image: img) } },
+                        onDelete: { img in viewModel.delete(image: img) }
                     )
 
                     // Create Album Button
-                    Button(action: createAlbum) {
+                    Button(action: { Task { await viewModel.createAlbum() } }) {
                         HStack {
                             Image(systemName: "photo.stack")
                             Text("Create Album with Sorted Photos")
@@ -85,7 +76,7 @@ struct ContentView: View {
                         .background(Color.green)
                         .cornerRadius(10)
                     }
-                    .disabled(isProcessing)
+                    .disabled(viewModel.isProcessing)
                 }
                 
                 Spacer()
@@ -96,13 +87,13 @@ struct ContentView: View {
             .toolbarBackground(DesignColors.appBackground, for: .navigationBar)
             .toolbarBackground(.visible, for: .navigationBar)
         }
-        .alert("Alert", isPresented: $showingAlert) {
+        .alert("Alert", isPresented: .constant(!viewModel.alertMessage.isEmpty)) {
             Button("OK") { }
         } message: {
-            Text(alertMessage)
+            Text(viewModel.alertMessage)
         }
-        .sheet(isPresented: $isPresentingShareSheet, content: {
-            ShareSheet(activityItems: shareItems)
+        .sheet(isPresented: $viewModel.isPresentingShareSheet, content: {
+            ShareSheet(activityItems: viewModel.shareItems)
         })
     }
 
@@ -131,250 +122,17 @@ struct ContentView: View {
     }
 
     private func processIOSPickerResults(_ results: [PHPickerResult]) async {
-        isProcessing = true
-        processingProgress = 0
-        totalPhotos = results.count
-        processedImages.removeAll()
-
-        for (index, result) in results.enumerated() {
-            do {
-                let image = try await loadUIImage(from: result.itemProvider)
-                let score = await calculateAestheticScore(for: image)
-                var phAsset: PHAsset? = nil
-                if let id = result.assetIdentifier {
-                    let fetched = PHAsset.fetchAssets(withLocalIdentifiers: [id], options: nil)
-                    phAsset = fetched.firstObject
-                }
-                let identifier = phAsset?.localIdentifier ?? UUID().uuidString
-                let processed = ProcessedImage(id: identifier, image: image, score: score, originalIndex: index, asset: phAsset)
-                processedImages.append(processed)
-            } catch {
-                print("Failed to load UIImage: \(error)")
-            }
-            await MainActor.run { processingProgress = index + 1 }
-        }
-
-        processedImages.sort { $0.score > $1.score }
-        isProcessing = false
+        await viewModel.handlePicker(results: results)
     }
 
 
-    private func calculateAestheticScore(for image: CrossPlatformImage) async -> Double {
-        guard let cgImage = image.cgImage else { return 0.0 }
-        let aestheticRequest = VNCalculateImageAestheticsScoresRequest()
-        let handler = VNImageRequestHandler(cgImage: cgImage, options: [:])
-        do { try handler.perform([aestheticRequest]) } catch { return 0.0 }
-        if let obs = aestheticRequest.results?.first as? VNImageAestheticsScoresObservation {
-            // Convert to -100..100 range for downstream normalization (0..5) and hue mapping
-            return Double(obs.overallScore) * 100.0
-        }
-        return 0.0
-    }
+    // Scoring moved to VisionScoringService via ViewModel
     
-    // MARK: - Photos Authorization
-    private func requestPhotoAuthorization(_ completion: @escaping (PHAuthorizationStatus) -> Void) {
-        if #available(iOS 14, macOS 11, *) {
-            PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
-                completion(status)
-            }
-        } else {
-            PHPhotoLibrary.requestAuthorization { status in
-                completion(status)
-            }
-        }
-    }
-    
-    private func createAlbum() {
-        guard !processedImages.isEmpty else {
-            alertMessage = "No photos to add to album"
-            showingAlert = true
-            return
-        }
+    // Removed legacy album helpers; handled by ViewModel and PhotoLibraryService
 
-        // Temporarily disable Photos writes to avoid any permission prompts
-        alertMessage = "Album creation is temporarily disabled to avoid Photos permission prompts. We’ll re-enable this with proper permissions later."
-        showingAlert = true
-    }
+    // Selection/share/delete delegated to ViewModel
 
-    private func handleAuthAndSave(status: PHAuthorizationStatus) {
-        switch status {
-        case .authorized, .limited:
-            self.saveImagesToAlbum()
-        case .denied, .restricted:
-            #if os(iOS)
-            alertMessage = "Photo additions denied. Enable in Settings > Privacy > Photos."
-            #else
-            alertMessage = "Photo library access was denied. Enable in System Settings > Privacy & Security > Photos."
-            #endif
-            showingAlert = true
-        case .notDetermined:
-            alertMessage = "Photo library access not determined. Please try again."
-            showingAlert = true
-        @unknown default:
-            alertMessage = "Unknown authorization status."
-            showingAlert = true
-        }
-    }
-    
-    private func saveImagesToAlbum() {
-        let albumName = "Best Pictures - \(Date().formatted(date: .abbreviated, time: .shortened))"
-        
-        // First, create the album
-        PHPhotoLibrary.shared().performChanges {
-            let albumRequest = PHAssetCollectionChangeRequest.creationRequestForAssetCollection(withTitle: albumName)
-        } completionHandler: { success, error in
-            if success {
-                // Now add images to the created album
-                self.addImagesToAlbum(albumName: albumName)
-            } else {
-                DispatchQueue.main.async {
-                    self.alertMessage = "Failed to create album: \(error?.localizedDescription ?? "Unknown error")"
-                    self.showingAlert = true
-                }
-            }
-        }
-    }
-    
-    private func addImagesToAlbum(albumName: String) {
-        // Find the album we just created
-        let fetchOptions = PHFetchOptions()
-        fetchOptions.predicate = NSPredicate(format: "title = %@", albumName)
-        let collections = PHAssetCollection.fetchAssetCollections(with: .album, subtype: .any, options: fetchOptions)
-
-        guard let album = collections.firstObject else {
-            DispatchQueue.main.async {
-                self.alertMessage = "Could not find created album"
-                self.showingAlert = true
-            }
-            return
-        }
-
-        // Add existing assets to the album if available; otherwise create new assets
-        PHPhotoLibrary.shared().performChanges {
-            let albumChangeRequest = PHAssetCollectionChangeRequest(for: album)
-            let placeholders = NSMutableArray()
-
-            for processedImage in self.processedImages {
-                if let asset = processedImage.asset {
-                    albumChangeRequest?.addAssets([asset] as NSFastEnumeration)
-                } else {
-                    #if canImport(UIKit)
-                    let imageRequest = PHAssetChangeRequest.creationRequestForAsset(from: processedImage.image)
-                    #else
-                    let imageRequest = PHAssetChangeRequest.creationRequestForAsset(from: processedImage.image)
-                    #endif
-                    if let ph = imageRequest.placeholderForCreatedAsset {
-                        placeholders.add(ph)
-                    }
-                }
-            }
-
-            if placeholders.count > 0 {
-                albumChangeRequest?.addAssets(placeholders)
-            }
-        } completionHandler: { success, error in
-            DispatchQueue.main.async {
-                if success {
-                    self.alertMessage = "Album '\(albumName)' created successfully with \(self.processedImages.count) photos!"
-                } else {
-                    self.alertMessage = "Failed to add photos to album: \(error?.localizedDescription ?? "Unknown error")"
-                }
-                self.showingAlert = true
-            }
-        }
-    }
-
-    // iOS helpers
-    private func ensurePhotoAccess(_ handled: @escaping (PHAuthorizationStatus) -> Void) {
-        if #available(iOS 14, *) {
-            let current = PHPhotoLibrary.authorizationStatus(for: .readWrite)
-            guard current == .notDetermined else { handled(current); return }
-            PHPhotoLibrary.requestAuthorization(for: .readWrite) { status in
-                DispatchQueue.main.async { handled(status) }
-            }
-        } else {
-            let current = PHPhotoLibrary.authorizationStatus()
-            guard current == .notDetermined else { handled(current); return }
-            PHPhotoLibrary.requestAuthorization { status in
-                DispatchQueue.main.async { handled(status) }
-            }
-        }
-    }
-
-    private func toggleSelection(for image: ProcessedImage) {
-        if selectedIds.contains(image.id) { selectedIds.remove(image.id) } else { selectedIds.insert(image.id) }
-    }
-
-    private func delete(_ image: ProcessedImage) {
-        processedImages.removeAll { $0.id == image.id }
-        selectedIds.remove(image.id)
-    }
-
-    private func share(_ image: ProcessedImage) async {
-        if let asset = image.asset {
-            await shareOriginalAsset(asset)
-        } else {
-            await shareImageDataFallback(image.image)
-        }
-    }
-
-    private func shareOriginalAsset(_ asset: PHAsset) async {
-        let resources = PHAssetResource.assetResources(for: asset)
-        guard let resource = resources.first(where: { $0.type == .photo || $0.type == .fullSizePhoto }) ?? resources.first else {
-            await MainActor.run {
-                alertMessage = "Unable to access original resource for sharing."
-                showingAlert = true
-            }
-            return
-        }
-
-        let tempURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString)
-            .appendingPathExtension("jpg")
-
-        do {
-            try? FileManager.default.removeItem(at: tempURL)
-            try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
-                PHAssetResourceManager.default().writeData(for: resource, toFile: tempURL, options: nil) { error in
-                    if let error = error { cont.resume(throwing: error) } else { cont.resume() }
-                }
-            }
-            await MainActor.run {
-                shareItems = [tempURL]
-                isPresentingShareSheet = true
-            }
-        } catch {
-            await MainActor.run {
-                alertMessage = "Failed to prepare original for sharing: \(error.localizedDescription)"
-                showingAlert = true
-            }
-        }
-    }
-
-    private func shareImageDataFallback(_ uiImage: UIImage) async {
-        guard let data = uiImage.jpegData(compressionQuality: 0.95) else {
-            await MainActor.run {
-                alertMessage = "Failed to prepare image for sharing."
-                showingAlert = true
-            }
-            return
-        }
-        let tempURL = FileManager.default.temporaryDirectory
-            .appendingPathComponent(UUID().uuidString)
-            .appendingPathExtension("jpg")
-        do {
-            try data.write(to: tempURL)
-            await MainActor.run {
-                shareItems = [tempURL]
-                isPresentingShareSheet = true
-            }
-        } catch {
-            await MainActor.run {
-                alertMessage = "Failed to write temp image for sharing."
-                showingAlert = true
-            }
-        }
-    }
+    // Share moved into ViewModel
 
     // Deep link to app settings for Photos permissions
     private func openAppSettings() {
@@ -389,50 +147,13 @@ struct ContentView: View {
         PHPhotoLibrary.shared().presentLimitedLibraryPicker(from: root)
     }
 
-    private func requestImageData(for asset: PHAsset) async -> Data? {
-        await withCheckedContinuation { continuation in
-            let options = PHImageRequestOptions()
-            options.isNetworkAccessAllowed = true
-            options.deliveryMode = .highQualityFormat
-            options.version = .current
-            PHImageManager.default().requestImageDataAndOrientation(for: asset, options: options) { data, _, _, _ in
-                continuation.resume(returning: data)
-            }
-        }
-    }
-
-    private func processPHAssets(_ assets: [PHAsset]) async {
-        isProcessing = true
-        processingProgress = 0
-        totalPhotos = assets.count
-        processedImages.removeAll()
-
-        for (index, asset) in assets.enumerated() {
-            guard let data = await requestImageData(for: asset) else { continue }
-            guard let image = UIImage(data: data) else { continue }
-            let score = await calculateAestheticScore(for: image)
-            let identifier = asset.localIdentifier
-            let processed = ProcessedImage(id: identifier, image: image, score: score, originalIndex: index, asset: asset)
-            processedImages.append(processed)
-            await MainActor.run { processingProgress = index + 1 }
-        }
-
-        processedImages.sort { $0.score > $1.score }
-        isProcessing = false
-    }
+    // Asset processing handled by ViewModel
 }
 
 typealias CrossPlatformImage = UIImage
 
 // DesignColors moved to DesignColors.swift
 
-struct ProcessedImage: Identifiable {
-    let id: String
-    let image: CrossPlatformImage
-    let score: Double
-    let originalIndex: Int
-    let asset: PHAsset?
-}
 
 #Preview {
     ContentView()
