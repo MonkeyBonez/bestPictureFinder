@@ -2,17 +2,16 @@
 //  IOSAssetPicker.swift
 //  bestPictureFinder
 //
-//  Created to provide an iOS-only PHPicker wrapper that yields PHAsset identifiers.
+//  Created to provide an iOS-only PHPicker wrapper that yields PHPickerResult values with asset identifiers.
 //
 
-#if canImport(UIKit)
 import SwiftUI
 import Photos
 import PhotosUI
 
 struct IOSAssetPicker: UIViewControllerRepresentable {
     @Binding var isPresented: Bool
-    var onPicked: ([String]) -> Void
+    var onPickedResults: ([PHPickerResult]) -> Void
 
     func makeUIViewController(context: Context) -> PHPickerViewController {
         var configuration = PHPickerConfiguration(photoLibrary: .shared())
@@ -35,10 +34,7 @@ struct IOSAssetPicker: UIViewControllerRepresentable {
 
         func picker(_ picker: PHPickerViewController, didFinishPicking results: [PHPickerResult]) {
             defer { parent.isPresented = false }
-            // Collect asset identifiers for items that are from Photos library
-            let ids = results.compactMap { $0.assetIdentifier }
-            parent.onPicked(ids)
+            parent.onPickedResults(results)
         }
     }
 }
-#endif

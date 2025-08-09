@@ -1,0 +1,55 @@
+Should make a list view like shown in /mockUps
+elements of mockup to notice:
+
+swipe left on element shows delete (remove from current results)
+swipe right on element shows share (share sheet - iOS. Also should use iOS share icon)
+
+user should be able to select an element (indicated using the check mark on the right side of the element shown in mock ups)
+later we will add a feature to do remove or share by selected and will also make it possible to select all or top x at once. do not implement this yet just add as a todo later.
+the "stars" represented as circles /5 and not just filling full or half stars but the exact amount. the text next to the stars represents the number of stars 
+The app and its interactable UI should follow the following colors RGB (light colors and dark colors regaurdless of name - other than red):
+lightGreen = 214,240,230
+mintGreen = 93,203,141
+lightYellow = 246,235,208
+sunYellow = 245,192,92
+lightLavender = 223,226,243
+vividLavender = 101,112,221
+lightBlue = 220,236,247
+oceanBlue = 74,158,238
+red = 235,77,83
+Color of circle under number result: 
+**Given:**
+the returned result from aesthetic score is -100 to 100, normalize this linearly as 0 (-100) to 5 (100) with 0 mapped to 2.5.
+$$
+\begin{aligned}
+x &= 0 &\rightarrow& \text{Red} \quad (\text{Hue} = 0^\circ) \\
+x &= 2.5 &\rightarrow& \text{Yellow} \quad (\text{Hue} = 60^\circ) \\
+x &= 5 &\rightarrow& \text{Green} \quad (\text{Hue} = 120^\circ)
+\end{aligned}
+$$
+
+We want a **linear hue interpolation** across $0 \le x \le 5$.
+
+---
+
+**Equation:**
+
+1. **Normalize $x$ to the 0–1 range:**
+
+$$
+t = \mathrm{clamp}\left( \frac{x}{5},\ 0,\ 1 \right)
+$$
+
+2. **Hue calculation (degrees):**
+
+$$
+H = 120 \cdot t
+$$
+
+3. **HSL color:**
+
+$$
+\mathrm{Color}(x) = \mathrm{HSL}\left( H,\ 100\%,\ 50\% \right)
+$$
+
+---

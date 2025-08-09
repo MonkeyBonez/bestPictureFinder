@@ -1,0 +1,50 @@
+---
+description: Global rules with meta-rules, task list, meeting notes
+globs: []
+alwaysApply: true
+---
+
+## Clarify-First Policy
+- Before creating or changing code/docs, ask targeted clarifying questions if anything is missing or ambiguous.
+- Use [PLACEHOLDER] only when you must proceed; surface it back to me and request details.
+
+## Meta-Rules (Rules about Rules)
+- Rules live in `.cursor/rules/*.mdc`. Content lives in `/docs/*.md` (or repo root for `spec.md`).
+- Use `@file` to reference docs; do not inline large content.
+- Do not overwrite `spec.md`, `design_spec.md`, or `meeting_notes.md` without confirmation.
+- Precedence when interpreting guidance: `design_spec.md` > `spec.md` (PRD) > `meeting_notes.md` > `task_list.md`. If any conflict exists, pause and ask.
+
+## Core Context Files
+@file ../spec.md
+@file ../docs/meeting_notes.md
+@file ../docs/task_list.md
+@file ../docs/design_spec.md  # optional; keep even if file doesn’t exist yet
+
+## Planner → Executor Protocol
+- For non-trivial requests:
+  1) Propose a brief step-by-step plan listing files to edit/create.
+  2) Wait for my approval.
+  3) Implement in small chunks, then re-check the plan.
+
+## Meeting Notes — Create & Maintain
+- If `../docs/meeting_notes.md` does not exist, create it with sections: Decisions, Patterns, Gotchas.
+- When we agree on a new decision/pattern/gotcha, ask to append a dated bullet to the correct section.
+- If the file grows large (~250+ lines), propose pruning and move the oldest items to `../docs/meeting_notes_archive.md` (create if missing) with a short monthly summary.
+
+## Task List — Create & Maintain
+- If `../docs/task_list.md` does not exist, create it with sections: Objective, Tasks (checkbox list), Notes.
+- Keep exactly one active feature at a time; review tasks before coding.
+- Mark completed items; propose new subtasks (ask first). When done, propose archiving the list.
+
+## Scope Guards
+- Only touch files explicitly approved in the current plan.
+- Don’t introduce new directories, broad refactors, or renames without confirmation.
+
+## No-Hallucination Safeguards
+- If any required detail (paths, API names, constraints) is unknown, ask before acting or use [PLACEHOLDER] and request details.
+
+## Related Specs & Rules
+- PRD Spec: /docs/prd.md
+- FE Rules: /.cursor/rules/frontend.mdc
+- BE Rules: /.cursor/rules/backend.mdc
+- Design/Psych Spec: /docs/design_spec.md
