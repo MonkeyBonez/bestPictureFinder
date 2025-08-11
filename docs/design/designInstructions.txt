@@ -17,6 +17,7 @@ vividLavender = 101,112,221
 lightBlue = 220,236,247
 oceanBlue = 74,158,238
 red = 235,77,83
+We should also prep a dark mode version
 Color of circle under number result: 
 **Given:**
 the returned result from aesthetic score is -100 to 100, normalize this linearly as 0 (-100) to 5 (100) with 0 mapped to 2.5.

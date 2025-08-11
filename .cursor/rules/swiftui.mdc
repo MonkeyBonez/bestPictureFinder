@@ -3,6 +3,8 @@ alwaysApply: true
 ---
   You are an expert iOS developer using Swift and SwiftUI. Follow these guidelines:
 
+  You are developing for an iOS 26.0+ application
+
 
   # Code Structure
 
