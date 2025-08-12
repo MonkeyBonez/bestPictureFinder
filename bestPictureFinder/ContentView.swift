@@ -19,105 +19,191 @@ struct ContentView: View {
     @State private var overlayPresentation: (images: [UIImage], index: Int, sourceId: String)? = nil
     @Namespace private var heroNS
     @State private var thumbnailFrames: [String: CGRect] = [:]
+    @State private var compactToolbar: Bool = false
+    @State private var leftSlotWidth: CGFloat = 0
+    @State private var rightSlotWidth: CGFloat = 0
+    
+    var navTitle: String {
+        let selectedCount = viewModel.selectedIds.count
+        
+        if selectedCount == 0 {
+            return "No photos selected"
+        }
+        if selectedCount == 1 {
+            return "1 photo selected"
+        }
+        
+        return "\(selectedCount) photos selected"
+    }
 
     var body: some View {
         NavigationStack {
             ZStack {
                 DesignColors.appBackground.ignoresSafeArea()
-                VStack(spacing: 16) {
-                // Selection Button (iOS only)
-                Button {
-                    showIOSAssetPicker = true
-                } label: {
-                    Label("Pick from Library", systemImage: "photo")
-                        .font(.headline)
-                        .foregroundColor(.white)
-                        .padding()
-                        .background(Color.blue)
-                        .cornerRadius(10)
-                }
-                .sheet(isPresented: $showIOSAssetPicker) {
-                    IOSAssetPicker(isPresented: $showIOSAssetPicker) { results in
-                        pendingIOSPickerResults = results
-                        Task { await processIOSPickerResults(results) }
-                    }
-                }
-
-                // Processing Status
-                if viewModel.isProcessing {
-                    VStack(spacing: 8) {
-                        ProgressView()
-                            .scaleEffect(1.2)
-                        if viewModel.totalPhotos > 0 {
-                            Text("Analyzing photos… \(viewModel.processingProgress)/\(viewModel.totalPhotos)")
-                                .font(.caption2)
-                                .foregroundColor(.secondary)
-                        }
-                    }
-                }
-
                 // Results List
                 if !viewModel.processedImages.isEmpty {
-                    PhotoResultsListView(
-                        processedImages: viewModel.processedImages,
-                        selectedIds: viewModel.selectedIds,
-                        onToggleSelection: { img in viewModel.toggleSelection(id: img.id) },
-                        onShare: { img in Task { await viewModel.share(image: img) } },
-                        onDelete: { img in viewModel.delete(image: img) },
-                        onOpenOverlay: { images, startIndex, sourceId in
-                            withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
-                                self.overlayPresentation = (images, startIndex, sourceId)
+                    ZStack {
+                        PhotoResultsListView(
+                            processedImages: viewModel.processedImages,
+                            selectedIds: viewModel.selectedIds,
+                            onToggleSelection: { img in viewModel.toggleSelection(id: img.id) },
+                            onShare: { img in Task { await viewModel.share(image: img) } },
+                            onDelete: { img in viewModel.delete(image: img) },
+                            onOpenOverlay: { images, startIndex, sourceId in
+                                // Expand toolbar to full set during animation, then compact
+                                compactToolbar = false
+                                withAnimation(.spring(response: 0.3, dampingFraction: 0.7)) {
+                                    self.overlayPresentation = (images, startIndex, sourceId)
+                                }
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                    compactToolbar = true
+                                }
+                            },
+                            heroNamespace: heroNS,
+                            activeSourceId: overlayPresentation?.sourceId,
+                            onReportThumbnailFrame: { id, frame in thumbnailFrames[id] = frame }
+                        )
+                        
+                        if viewModel.isProcessing {
+                            VStack(spacing: 8) {
+                                ProgressView().scaleEffect(1.2)
+                                if viewModel.totalPhotos > 0 {
+                                    Text("Analyzing photos… \(viewModel.processingProgress)/\(viewModel.totalPhotos)")
+                                        .font(.caption2)
+                                        .foregroundColor(.secondary)
+                                }
                             }
-                        },
-                        heroNamespace: heroNS,
-                        activeSourceId: overlayPresentation?.sourceId,
-                        onReportThumbnailFrame: { id, frame in thumbnailFrames[id] = frame }
-                    )
-
-                    // Create Album Button
-                    Button(action: { Task { await viewModel.createAlbum() } }) {
-                            HStack {
-                                Image(systemName: "photo.stack")
-                                Text("Create Album with Sorted Photos")
-                            }
-                            .font(.headline)
-                            .foregroundColor(.white)
-                            .padding()
-                            .frame(maxWidth: .infinity)
-                            .background(Color.green)
-                            .cornerRadius(10)
+                            .padding(12)
+                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            .shadow(radius: 10)
                         }
-                    .disabled(viewModel.isProcessing)
+                    }
+                    
+                    // (Moved) Create Album action is now in the bottom toolbar
                 }
-                
-                Spacer()
             }
-            .padding()
-            }
-            .navigationTitle("")
+            .navigationTitle(navTitle)
             .navigationBarTitleDisplayMode(.inline)
-            .toolbarBackground(DesignColors.appBackground, for: .navigationBar)
-            .toolbarBackground(.visible, for: .navigationBar)
-            .toolbarBackground(DesignColors.appBackground, for: .bottomBar)
-            .toolbarBackground(.visible, for: .bottomBar)
+        }
+//            .toolbarBackground(.visible, for: .navigationBar)
+//            .toolbarBackground(DesignColors.appBackground, for: .navigationBar)
+//            .toolbarBackground(.visible, for: .navigationBar)
+//            .toolbarBackground(DesignColors.appBackground, for: .bottomBar)
+//            .toolbarBackground(.visible, for: .bottomBar)
             .toolbar {
                 // Sticky header placeholder (top bar)
-                ToolbarItem(placement: .topBarLeading) {
-                    Color.clear.frame(width: 1, height: 44)
-                        .accessibilityHidden(true)
-                }
-                ToolbarItem(placement: .topBarTrailing) {
-                    Color.clear.frame(width: 1, height: 44)
-                        .accessibilityHidden(true)
-                }
+//                ToolbarItem(placement: .topBarLeading) {
+//                    Color.clear.frame(width: 1, height: 44)
+//                        .accessibilityHidden(true)
+//                }
+//                ToolbarItem(placement: .topBarTrailing) {
+//                    Color.clear.frame(width: 1, height: 44)
+//                        .accessibilityHidden(true)
+//                }
 
-                // Sticky footer placeholder (bottom bar)
-                ToolbarItem(placement: .bottomBar) {
-                    HStack { Spacer(); Color.clear.frame(height: 56); Spacer() }
-                        .accessibilityHidden(true)
+                // Bottom toolbar actions with in-place sliding/fade animations
+                ToolbarItemGroup(placement: .bottomBar) {
+                    let isFullscreen = overlayPresentation != nil
+                    let current: ProcessedImage? = overlayPresentation.flatMap { overlay in
+                        viewModel.processedImages.first { $0.id == overlay.sourceId }
+                    }
+
+                    // Left side group (Create Album + Share)
+                    HStack(spacing: 18) {
+                        // Create Album: present normally in list; during fullscreen keep only during animation, then remove
+                        if !isFullscreen {
+                            Button("Create Album", systemImage: "photo.stack") {
+                                Task { await viewModel.createAlbum() }
+                            }
+                            .disabled(viewModel.selectedIds.isEmpty || viewModel.isProcessing)
+                            .tint(DesignColors.sunYellow)
+                            .accessibilityLabel("Create Album with Selected Photos")
+                            .opacity(1)
+                            .offset(x: 0)
+                            .background(
+                                GeometryReader { proxy in
+                                    Color.clear.onAppear { leftSlotWidth = proxy.size.width }
+                                        .onChange(of: proxy.size.width) { newValue in leftSlotWidth = newValue }
+                                }
+                            )
+                        } else if !compactToolbar {
+                            Button("Create Album", systemImage: "photo.stack") {
+                                Task { await viewModel.createAlbum() }
+                            }
+                            .disabled(true)
+                            .opacity(0)
+                            .offset(x: -24)
+                            .accessibilityHidden(true)
+                        }
+
+                        // Share switches behavior based on mode
+                        Button("Share", systemImage: "square.and.arrow.up.fill") {
+                            if let current { Task { await viewModel.share(image: current) } }
+                            else { Task { await viewModel.shareSelected() } }
+                        }
+                        .disabled(isFullscreen ? (current == nil || viewModel.isProcessing)
+                                               : (viewModel.selectedIds.isEmpty || viewModel.isProcessing))
+                        .tint(.accentColor)
+                        .accessibilityLabel(isFullscreen ? "Share This Photo" : "Share Selected Photos")
+                        .offset(x: (isFullscreen && !compactToolbar) ? -(leftSlotWidth + 18) : 0, y: -2)
+                    }
+                    .animation(.spring(response: 0.28, dampingFraction: 0.9), value: isFullscreen)
+
+                    Spacer()
+
+                    // Right side group (Remove + Add Photos)
+                    HStack(spacing: 18) {
+                        // Remove switches label/behavior but stays in place
+                        Button(isFullscreen ? "Remove" : "Remove Selected", systemImage: "minus.circle.fill") {
+                            if let current, isFullscreen {
+                                viewModel.delete(image: current)
+                                overlayPresentation = nil
+                            } else {
+                                removeSelectedPhotos()
+                            }
+                        }
+                        .labelStyle(.iconOnly)
+                        .tint(.red)
+                        .disabled(isFullscreen ? viewModel.isProcessing : viewModel.selectedIds.isEmpty)
+                        .accessibilityLabel(isFullscreen ? "Remove This Photo" : "Remove Selected Photos")
+
+                        // Add Photos: present normally in list; during fullscreen keep only during animation, then remove
+                        if !isFullscreen {
+                            Button("Add Photos", systemImage: "plus.circle.fill") {
+                                showIOSAssetPicker = true
+                            }
+                            .labelStyle(.iconOnly)
+                            .tint(DesignColors.mintGreen)
+                            .accessibilityLabel("Add Photos")
+                            .opacity(1)
+                            .offset(x: 0)
+                            .background(
+                                GeometryReader { proxy in
+                                    Color.clear.onAppear { rightSlotWidth = proxy.size.width }
+                                        .onChange(of: proxy.size.width) { newValue in rightSlotWidth = newValue }
+                                }
+                            )
+                        } else if !compactToolbar {
+                            Button("Add Photos", systemImage: "plus.circle.fill") {
+                                showIOSAssetPicker = true
+                            }
+                            .labelStyle(.iconOnly)
+                            .disabled(true)
+                            .opacity(0)
+                            .offset(x: 24)
+                            .accessibilityHidden(true)
+                        }
+                    }
+                    .animation(.spring(response: 0.28, dampingFraction: 0.9), value: isFullscreen)
+                    .overlay(
+                        // Move Remove to the right slot during transition
+                        Color.clear
+                            .frame(width: 0, height: 0)
+                            .allowsHitTesting(false)
+                    )
                 }
             }
-        }
+        
         .alert("Alert", isPresented: .constant(!viewModel.alertMessage.isEmpty)) {
             Button("OK") { }
         } message: {
@@ -126,16 +212,26 @@ struct ContentView: View {
         .sheet(isPresented: $viewModel.isPresentingShareSheet, content: {
             ShareSheet(activityItems: viewModel.shareItems)
         })
+        .sheet(isPresented: $showIOSAssetPicker) {
+            IOSAssetPicker(isPresented: $showIOSAssetPicker) { results in
+                pendingIOSPickerResults = results
+                Task { await processIOSPickerResults(results) }
+            }
+        }
         .overlay(alignment: .center) {
             if let overlayPresentation {
                 FullScreenImageView(
                     images: overlayPresentation.images,
                     index: overlayPresentation.index,
                     onClose: {
-                        withAnimation(.spring(response: 0.2, dampingFraction: 1.0)) {
+                                withAnimation(.spring(response: 0.2, dampingFraction: 1.0)) {
                             self.overlayPresentation = nil
                         }
-                    },
+                                // After the slide/fade animation, collapse toolbar to compact layout
+                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                    compactToolbar = false
+                                }
+                            },
                     heroNamespace: heroNS,
                     sourceId: overlayPresentation.sourceId,
                     targetThumbnailFrame: thumbnailFrames[overlayPresentation.sourceId]
@@ -173,6 +269,15 @@ struct ContentView: View {
 
     private func processIOSPickerResults(_ results: [PHPickerResult]) async {
         await viewModel.handlePicker(results: results)
+    }
+
+    private func removeSelectedPhotos() {
+        let selected = viewModel.selectedIds
+        guard !selected.isEmpty else { return }
+        // Remove all selected images
+        for img in viewModel.processedImages where selected.contains(img.id) {
+            viewModel.delete(image: img)
+        }
     }
 
 

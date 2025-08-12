@@ -40,7 +40,7 @@ struct PhotoResultsListView: View {
                     .onTapGesture { onToggleSelection(image) }
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         Button(role: .destructive) { onDelete(image) } label: {
-                            Label("Delete", systemImage: "trash")
+                            Label("Remove", systemImage: "minus.circle.fill")
                         }
                     }
                     .swipeActions(edge: .leading, allowsFullSwipe: false) {
@@ -51,7 +51,15 @@ struct PhotoResultsListView: View {
                     }
                     .listRowBackground(
                         RoundedRectangle(cornerRadius: 30, style: .continuous)
-                            .fill(selectedIds.contains(image.id) ? DesignColors.lightBlue : Color.white)
+                            .fill(
+                                selectedIds.contains(image.id)
+                                ? Color(
+                                    hue: (120.0 * max(0.0, min(1.0, (image.score + 100.0) / 200.0))) / 360.0,
+                                    saturation: 0.7,
+                                    brightness: 0.92
+                                  ).opacity(0.18)
+                                : Color.white
+                            )
                     )
                     .listRowInsets(EdgeInsets(top: 10, leading: 12, bottom: 10, trailing: 12))
                     .listRowSeparator(.hidden)
@@ -61,7 +69,7 @@ struct PhotoResultsListView: View {
             .listRowSpacing(12)
             .scrollContentBackground(.hidden)
         }
-        .frame(maxHeight: 520)
+//        .frame(maxHeight: 520)
         .background(DesignColors.appBackground.ignoresSafeArea())
     }
 }
@@ -80,8 +88,6 @@ struct ImageResultRow: View {
 
     var body: some View {
         HStack(spacing: 14) {
-            RatingBadgeView(score: image.score, diameter: 36)
-                .opacity(0.90)
             ThumbnailView(
                 image: image.image,
                 size: 80,
@@ -100,14 +106,17 @@ struct ImageResultRow: View {
                 }
             )
             .onTapGesture { onOpenOverlay(allImages.map { $0.image }, currentIndex, image.id) }
-            CircleRatingView(rating: normalizedScore05(from: image.score))
+            CircleRatingView(
+                rating: normalizedScore05(from: image.score),
+                fillColor: rankHueColor(for: image.score)
+            )
             Spacer()
             Button(action: onToggleSelection) {
                 Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 22))
+                    .font(.system(size: 26))
             }
             .buttonStyle(.plain)
-            .foregroundColor(isSelected ? .blue : .secondary)
+            .foregroundColor(isSelected ? rankHueColor(for: image.score) : .secondary)
             .accessibilityLabel(isSelected ? "Selected" : "Not selected")
         }
         .padding(.vertical, 3)
@@ -131,6 +140,7 @@ struct ImageResultRow: View {
 // Fractional 0..5 circle rating view with exact fill amount across five circles
 struct CircleRatingView: View {
     let rating: Double // expected 0..5
+    var fillColor: Color = .yellow
     private let circleSize: CGFloat = 10
     private let spacing: CGFloat = 4
 
@@ -142,7 +152,7 @@ struct CircleRatingView: View {
                         .fill(Color.gray.opacity(0.25))
                         .frame(width: circleSize, height: circleSize)
                     Circle()
-                        .fill(Color.yellow)
+                        .fill(fillColor)
                         .frame(width: circleSize, height: circleSize)
                         .mask(LeadingClipShape(fraction: CGFloat(fillFraction(for: index))))
                 }

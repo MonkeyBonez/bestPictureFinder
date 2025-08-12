@@ -35,7 +35,7 @@ final class PhotoResultsViewModel: ObservableObject {
         isProcessing = true
         processingProgress = 0
         totalPhotos = results.count
-        processedImages.removeAll()
+        // Append newly picked photos to existing results instead of replacing
 
         for (idx, result) in results.enumerated() {
             do {
