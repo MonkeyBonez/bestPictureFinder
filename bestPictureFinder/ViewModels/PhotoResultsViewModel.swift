@@ -47,11 +47,11 @@ final class PhotoResultsViewModel: ObservableObject {
             do {
                 let uiImage = try await loadUIImage(from: result.itemProvider)
                 let score = await vision.calculateScore(for: uiImage)
-                var phAsset: PHAsset? = nil
-                if let id = result.assetIdentifier { phAsset = photos.fetchAsset(by: id) }
+                // Do NOT resolve PHAsset here to avoid prompting; capture the local identifier instead
+                let pickedLocalId: String? = result.assetIdentifier
                 // Prefer Photos asset ID for stable dedup; otherwise derive a deterministic digest from image bytes
                 let identifier: String = {
-                    if let localId = phAsset?.localIdentifier { return localId }
+                    if let localId = pickedLocalId { return localId }
                     if let digest = computeStableImageDigest(for: uiImage) { return digest }
                     return UUID().uuidString
                 }()
@@ -61,7 +61,14 @@ final class PhotoResultsViewModel: ObservableObject {
                     // Already present; skip adding a duplicate
                     continue
                 }
-                let processed = ProcessedImage(id: identifier, image: uiImage, score: score, originalIndex: idx, asset: phAsset)
+                let processed = ProcessedImage(
+                    id: identifier,
+                    image: uiImage,
+                    score: score,
+                    originalIndex: idx,
+                    assetLocalIdentifier: pickedLocalId,
+                    asset: nil
+                )
                 processedImages.append(processed)
                 existingIds.insert(identifier)
             } catch {
@@ -139,27 +146,37 @@ final class PhotoResultsViewModel: ObservableObject {
             var addedCount = 0
             
             // Try to add PHAssets first (original quality)
-            let assets: [PHAsset] = processedImages.compactMap { $0.asset }
-            if !assets.isEmpty {
-                do {
-                    try await photos.addAssets(assets, to: album)
-                    addedCount += assets.count
-                } catch {
-                    print("Failed to add PHAssets: \(error)")
-                    // Continue with fallback
-                }
-            }
-            
-            // Fallback: Add in-memory images for any that couldn't be added as assets
-            let remainingImages = processedImages.filter { $0.asset == nil || !assets.contains($0.asset!) }
-            for processedImage in remainingImages {
-                do {
-                    if let imageData = processedImage.image.jpegData(compressionQuality: 0.95) {
-                        try await photos.addImageData(imageData, to: album)
+            // Add items in the displayed (aesthetic) order, deduping and preferring original assets
+            var addedAssetLocalIds = Set<String>()
+            var addedDigests = Set<String>()
+            for item in processedImages {
+                // Try original asset first
+                if let localId = item.assetLocalIdentifier,
+                   !addedAssetLocalIds.contains(localId),
+                   let asset = photos.fetchAsset(by: localId) {
+                    do {
+                        try await photos.addAssets([asset], to: album)
+                        addedAssetLocalIds.insert(localId)
                         addedCount += 1
+                        continue
+                    } catch {
+                        print("Failed to add asset \(localId): \(error)")
+                        // fall through to data
                     }
-                } catch {
-                    print("Failed to add image data: \(error)")
+                }
+
+                // Fallback to image data (dedupe by digest)
+                if let digest = computeStableImageDigest(for: item.image), addedDigests.contains(digest) {
+                    continue
+                }
+                if let data = item.image.jpegData(compressionQuality: 0.95) {
+                    do {
+                        try await photos.addImageData(data, to: album)
+                        if let digest = computeStableImageDigest(for: item.image) { addedDigests.insert(digest) }
+                        addedCount += 1
+                    } catch {
+                        print("Failed to add image data: \(error)")
+                    }
                 }
             }
             

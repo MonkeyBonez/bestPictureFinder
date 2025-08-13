@@ -217,7 +217,14 @@ enum SampleData {
             let ui = solidImage(color: [.systemBlue, .systemPink, .systemGreen, .systemOrange, .systemPurple][i % 5])
             let scoreSequence: [Double] = [-100, -50, 0, 50, 100]
             let score = scoreSequence[i % scoreSequence.count]
-            let processed = ProcessedImage(id: UUID().uuidString, image: ui, score: score, originalIndex: i, asset: nil)
+            let processed = ProcessedImage(
+                id: UUID().uuidString,
+                image: ui,
+                score: score,
+                originalIndex: i,
+                assetLocalIdentifier: nil,
+                asset: nil
+            )
             images.append(processed)
         }
         return images
