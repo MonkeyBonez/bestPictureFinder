@@ -22,10 +22,14 @@ struct ContentView: View {
     @State private var compactToolbar: Bool = false
     @State private var leftSlotWidth: CGFloat = 0
     @State private var rightSlotWidth: CGFloat = 0
+    @State private var ctaWiggle: Bool = false
     private let toolbarSpacing: CGFloat = 21
     
     var navTitle: String {
         let selectedCount = viewModel.selectedIds.count
+        if viewModel.processedImages.isEmpty {
+            return "No photos added"
+        }
         
         if selectedCount == 0 {
             return "No photos selected"
@@ -45,7 +49,7 @@ struct ContentView: View {
         NavigationStack {
             ZStack {
                 DesignColors.appBackground.ignoresSafeArea()
-                // Results List
+                // Results List or empty state
                 if !viewModel.processedImages.isEmpty {
                     ZStack {
                         PhotoResultsListView(
@@ -85,6 +89,18 @@ struct ContentView: View {
                     }
                     
                     // (Moved) Create Album action is now in the bottom toolbar
+                } else {
+                    VStack(spacing: 12) {
+                        Image(systemName: "photo.badge.plus")
+                            .font(.system(size: 60, weight: .regular))
+                            .foregroundStyle(.secondary)
+                        Text("Add photos to view their aesthetic rankings")
+                            .font(.headline)
+                            .foregroundStyle(.secondary)
+                            .multilineTextAlignment(.center)
+                    }
+                    .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
+                    .padding(.horizontal, 24)
                 }
             }
             .navigationTitle(isFullscreen ? "" : navTitle)
@@ -300,11 +316,30 @@ struct ContentView: View {
                     //                .transition(.opacity.combined(with: .scale(scale: 0.20)))
                 }
             }
+            .overlay(alignment: .bottomTrailing) {
+                if viewModel.processedImages.isEmpty {
+                        Image(systemName: "arrow.down.left")
+                            .font(.title2)
+                            .foregroundStyle(.secondary)
+                            .padding(.trailing, 8)
+                            .symbolEffect(.wiggle, value: ctaWiggle)
+                    .accessibilityLabel("Add photos. Let's help choose your most aesthetic photos.")
+                }
+            }
+            // remove arrow CTA; replaced by centered empty state
             .overlay(alignment: .top) {
                 LiquidGlassToast(message: viewModel.toastMessage) {
                     viewModel.toastMessage = ""
                 }
                 .padding(.top, 10)
+            }
+            .task(id: viewModel.processedImages.isEmpty) {
+                // Wiggle once every 3 seconds while CTA is visible
+                guard viewModel.processedImages.isEmpty else { return }
+                while viewModel.processedImages.isEmpty {
+                    ctaWiggle.toggle()
+                    try? await Task.sleep(nanoseconds: 2_000_000_000)
+                }
             }
             //        .animation(.easeInOut(duration: 1.0), value: overlayPresentation != nil)
         }
