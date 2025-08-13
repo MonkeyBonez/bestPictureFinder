@@ -297,15 +297,10 @@ struct ContentView: View {
                 }
             }
             .overlay(alignment: .top) {
-                if !viewModel.toastMessage.isEmpty {
-                    LiquidGlassToast(message: viewModel.toastMessage) {
-                        viewModel.toastMessage = ""
-                        // Maintain compatibility if legacy flag is still used anywhere
-                        viewModel.isShowingToast = false
-                    }
-                    .padding(.top, 10)
-                    .id(viewModel.toastMessage)
+                LiquidGlassToast(message: viewModel.toastMessage) {
+                    viewModel.toastMessage = ""
                 }
+                .padding(.top, 10)
             }
             //        .animation(.easeInOut(duration: 1.0), value: overlayPresentation != nil)
         }

@@ -21,7 +21,6 @@ final class PhotoResultsViewModel: ObservableObject {
     @Published var shareItems: [Any] = []
     @Published var isPresentingAlbumNamePrompt: Bool = false
     @Published var albumNameInput: String = ""
-    @Published var isShowingToast: Bool = false
     @Published var toastMessage: String = ""
 
     // Dependencies
@@ -115,7 +114,7 @@ final class PhotoResultsViewModel: ObservableObject {
         
         // Use the user-provided album name, or fallback to default if empty
         let albumName = albumNameInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty 
-            ? "Aesthesis Sorted Album"
+            ? "Aesthesis"
             : albumNameInput.trimmingCharacters(in: .whitespacesAndNewlines)
         
         let unique = photos.uniqueAlbumName(base: albumName)
@@ -151,7 +150,7 @@ final class PhotoResultsViewModel: ObservableObject {
             
             if addedCount > 0 {
                 // Show toast; lifecycle managed by LiquidGlassToast
-                toastMessage = "Album '\(unique)' created with \(addedCount) photos."
+                toastMessage = "Album '\(unique)' created in Photos."
             } else {
                 alertMessage = "Failed to add any photos to album."
             }

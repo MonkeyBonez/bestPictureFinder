@@ -30,8 +30,20 @@ struct LiquidGlassToast: View {
                         Color.clear
                             .onAppear {
                                 measuredWidth = proxy.size.width
-                                if !hasAnimatedOpen {
+                                if !hasAnimatedOpen && !message.isEmpty {
                                     hasAnimatedOpen = true
+                                    startOpenAnimation()
+                                }
+                            }
+                            .onChange(of: message) { newValue in
+                                measuredWidth = proxy.size.width
+                                cancelScheduledAnimations()
+                                isClosingRequested = false
+                                if newValue.isEmpty {
+                                    // Hide if message cleared
+                                    requestCloseNow()
+                                } else {
+                                    // Restart open animation for new message
                                     startOpenAnimation()
                                 }
                             }
@@ -60,6 +72,8 @@ struct LiquidGlassToast: View {
                 requestCloseNow()
             }
         }
+        .opacity(message.isEmpty ? 0 : 1)
+        .allowsHitTesting(!message.isEmpty)
         .accessibilityLabel(message)
         .onDisappear { cancelScheduledAnimations() }
     }
