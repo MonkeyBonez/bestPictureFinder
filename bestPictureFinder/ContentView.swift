@@ -96,7 +96,11 @@ struct ContentView: View {
             //            .toolbarBackground(DesignColors.appBackground, for: .bottomBar)
             //            .toolbarBackground(.visible, for: .bottomBar)
             .toolbar {
-
+                if isFullscreen {
+                    ToolbarItem(placement: .principal) {
+                            Text("") // real empty string
+                        }
+                }
                 // Sticky header placeholder (top bar)
                 //                ToolbarItem(placement: .topBarLeading) {
                 //                    Color.clear.frame(width: 1, height: 44)

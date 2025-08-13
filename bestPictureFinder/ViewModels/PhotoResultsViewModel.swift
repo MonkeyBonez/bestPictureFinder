@@ -7,6 +7,7 @@ import SwiftUI
 import Photos
 import PhotosUI
 import Combine
+import CryptoKit
 
 @MainActor
 final class PhotoResultsViewModel: ObservableObject {
@@ -40,15 +41,29 @@ final class PhotoResultsViewModel: ObservableObject {
         totalPhotos = results.count
         // Append newly picked photos to existing results instead of replacing
 
+        var existingIds = Set(processedImages.map { $0.id })
+
         for (idx, result) in results.enumerated() {
             do {
                 let uiImage = try await loadUIImage(from: result.itemProvider)
                 let score = await vision.calculateScore(for: uiImage)
                 var phAsset: PHAsset? = nil
                 if let id = result.assetIdentifier { phAsset = photos.fetchAsset(by: id) }
-                let identifier = phAsset?.localIdentifier ?? UUID().uuidString
+                // Prefer Photos asset ID for stable dedup; otherwise derive a deterministic digest from image bytes
+                let identifier: String = {
+                    if let localId = phAsset?.localIdentifier { return localId }
+                    if let digest = computeStableImageDigest(for: uiImage) { return digest }
+                    return UUID().uuidString
+                }()
+
+                // Deduplicate: skip if we've already added this identifier
+                if existingIds.contains(identifier) {
+                    // Already present; skip adding a duplicate
+                    continue
+                }
                 let processed = ProcessedImage(id: identifier, image: uiImage, score: score, originalIndex: idx, asset: phAsset)
                 processedImages.append(processed)
+                existingIds.insert(identifier)
             } catch {
                 print("Picker load failed: \(error)")
             }
@@ -219,6 +234,13 @@ final class PhotoResultsViewModel: ObservableObject {
         } else {
             alertMessage = "Failed to prepare images for sharing."
         }
+    }
+
+    // Creates a stable digest for non-asset images to allow deduplication across sessions/picks
+    private func computeStableImageDigest(for image: UIImage) -> String? {
+        guard let data = image.jpegData(compressionQuality: 1.0) else { return nil }
+        let digest = SHA256.hash(data: data)
+        return digest.compactMap { String(format: "%02x", $0) }.joined()
     }
 }
 
