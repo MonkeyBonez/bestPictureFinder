@@ -160,7 +160,7 @@ struct ContentView: View {
                     HStack(spacing: toolbarSpacing) {
                         // Create Album: present normally in list; during fullscreen keep only during animation, then remove
                         if !isFullscreen {
-                            Button("Create Album", systemImage: "photo.stack") {
+                            Button("Create Album", systemImage: "photo.stack.fill") {
                                 viewModel.showAlbumNamePrompt()
                             }
                             .disabled(viewModel.selectedIds.isEmpty || viewModel.isProcessing)
@@ -175,7 +175,7 @@ struct ContentView: View {
                                 }
                             )
                         } else if !compactToolbar {
-                            Button("Create Album", systemImage: "photo.stack") {
+                            Button("Create Album", systemImage: "photo.stack.fill") {
                                 viewModel.showAlbumNamePrompt()
                             }
                             .disabled(true)

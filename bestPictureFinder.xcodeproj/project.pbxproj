@@ -27,9 +27,9 @@
 				Services/PhotoLibraryService.swift,
 				Services/VisionScoringService.swift,
 				ViewModels/PhotoResultsViewModel.swift,
+				Views/Components/LiquidGlassToast.swift,
 				Views/Components/RatingBadgeView.swift,
 				Views/Components/ThumbnailView.swift,
-				Views/Components/LiquidGlassToast.swift,
 				Views/FullScreenImageView.swift,
 				Views/PhotoResultsListView.swift,
 			);
@@ -286,12 +286,11 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "bestPictureFinderiOS-Info.plist";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "This app needs permission to save photos to your photo library to create albums with the best aesthetic photos.";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "This app needs access to your photo library to select photos and create albums with the best aesthetic photos.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "The app can create albums with limited access, but full access keeps your library free of duplicates.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
@@ -326,12 +325,11 @@
 				GENERATE_INFOPLIST_FILE = YES;
 				INFOPLIST_FILE = "bestPictureFinderiOS-Info.plist";
 				INFOPLIST_KEY_NSPhotoLibraryAddUsageDescription = "This app needs permission to save photos to your photo library to create albums with the best aesthetic photos.";
-				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "This app needs access to your photo library to select photos and create albums with the best aesthetic photos.";
+				INFOPLIST_KEY_NSPhotoLibraryUsageDescription = "The app can create albums with limited access, but full access keeps your library free of duplicates.";
 				INFOPLIST_KEY_UIApplicationSceneManifest_Generation = YES;
 				INFOPLIST_KEY_UIApplicationSupportsIndirectInputEvents = YES;
 				INFOPLIST_KEY_UILaunchScreen_Generation = YES;
 				INFOPLIST_KEY_UISupportedInterfaceOrientations = UIInterfaceOrientationPortrait;
-				INFOPLIST_KEY_UISupportedInterfaceOrientations_iPad = "UIInterfaceOrientationLandscapeLeft UIInterfaceOrientationLandscapeRight UIInterfaceOrientationPortrait UIInterfaceOrientationPortraitUpsideDown";
 				IPHONEOS_DEPLOYMENT_TARGET = 26.0;
 				LD_RUNPATH_SEARCH_PATHS = (
 					"$(inherited)",
