@@ -19,6 +19,10 @@ final class PhotoResultsViewModel: ObservableObject {
     @Published var alertMessage: String = ""
     @Published var isPresentingShareSheet: Bool = false
     @Published var shareItems: [Any] = []
+    @Published var isPresentingAlbumNamePrompt: Bool = false
+    @Published var albumNameInput: String = ""
+    @Published var isShowingToast: Bool = false
+    @Published var toastMessage: String = ""
 
     // Dependencies
     private let vision: VisionScoringServiceProtocol
@@ -64,6 +68,14 @@ final class PhotoResultsViewModel: ObservableObject {
         selectedIds = Set(processedImages.prefix(limited).map { $0.id })
     }
 
+    func selectAll() {
+        selectedIds = Set(processedImages.map { $0.id })
+    }
+    
+    func deselectAll() {
+        selectedIds = Set()
+    }
+
     func delete(image: ProcessedImage) {
         processedImages.removeAll { $0.id == image.id }
         selectedIds.remove(image.id)
@@ -83,28 +95,73 @@ final class PhotoResultsViewModel: ObservableObject {
         await shareItemsFor(images: images)
     }
 
+    func showAlbumNamePrompt() {
+        let defaultName = ""
+        albumNameInput = defaultName
+        isPresentingAlbumNamePrompt = true
+    }
+
     func createAlbum() async {
         guard !processedImages.isEmpty else {
             alertMessage = "No photos to add to album"
             return
         }
+        
         let status = await photos.ensureReadWriteAuthorization()
         guard status == .authorized || status == .limited else {
             alertMessage = "Photo additions denied. Enable in Settings > Privacy > Photos."
             return
         }
-        let base = "TO NAME \(Date().formatted(date: .abbreviated, time: .shortened))"
-        let unique = photos.uniqueAlbumName(base: base)
+        
+        // Use the user-provided album name, or fallback to default if empty
+        let albumName = albumNameInput.trimmingCharacters(in: .whitespacesAndNewlines).isEmpty 
+            ? "Aesthesis Sorted Album"
+            : albumNameInput.trimmingCharacters(in: .whitespacesAndNewlines)
+        
+        let unique = photos.uniqueAlbumName(base: albumName)
+        
         do {
             let album = try await photos.createAlbum(named: unique)
+            var addedCount = 0
+            
+            // Try to add PHAssets first (original quality)
             let assets: [PHAsset] = processedImages.compactMap { $0.asset }
             if !assets.isEmpty {
-                try await photos.addAssets(assets, to: album)
+                do {
+                    try await photos.addAssets(assets, to: album)
+                    addedCount += assets.count
+                } catch {
+                    print("Failed to add PHAssets: \(error)")
+                    // Continue with fallback
+                }
             }
-            alertMessage = "Album '\(unique)' created."
+            
+            // Fallback: Add in-memory images for any that couldn't be added as assets
+            let remainingImages = processedImages.filter { $0.asset == nil || !assets.contains($0.asset!) }
+            for processedImage in remainingImages {
+                do {
+                    if let imageData = processedImage.image.jpegData(compressionQuality: 0.95) {
+                        try await photos.addImageData(imageData, to: album)
+                        addedCount += 1
+                    }
+                } catch {
+                    print("Failed to add image data: \(error)")
+                }
+            }
+            
+            if addedCount > 0 {
+                // Show toast; lifecycle managed by LiquidGlassToast
+                toastMessage = "Album '\(unique)' created with \(addedCount) photos."
+            } else {
+                alertMessage = "Failed to add any photos to album."
+            }
         } catch {
             alertMessage = "Failed to create album: \(error.localizedDescription)"
         }
+        
+        // Reset the prompt state
+        isPresentingAlbumNamePrompt = false
+        albumNameInput = ""
     }
 
     // MARK: - Helpers

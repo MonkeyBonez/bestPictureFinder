@@ -14,6 +14,7 @@ protocol PhotoLibraryServiceProtocol {
     func uniqueAlbumName(base: String) -> String
     func createAlbum(named: String) async throws -> PHAssetCollection
     func addAssets(_ assets: [PHAsset], to album: PHAssetCollection) async throws
+    func addImageData(_ imageData: Data, to album: PHAssetCollection) async throws
 }
 
 final class PhotoLibraryService: PhotoLibraryServiceProtocol {
@@ -118,6 +119,29 @@ final class PhotoLibraryService: PhotoLibraryServiceProtocol {
                 if let error = error { cont.resume(throwing: error) }
                 else if success { cont.resume() }
                 else { cont.resume(throwing: NSError(domain: "Album", code: -3)) }
+            }
+        }
+    }
+    
+    func addImageData(_ imageData: Data, to album: PHAssetCollection) async throws {
+        try await withCheckedThrowingContinuation { (cont: CheckedContinuation<Void, Error>) in
+            PHPhotoLibrary.shared().performChanges {
+                // Convert Data to UIImage first
+                guard let image = UIImage(data: imageData) else {
+                    cont.resume(throwing: NSError(domain: "Album", code: -5))
+                    return
+                }
+                
+                // Create a new asset from the image
+                let assetRequest = PHAssetChangeRequest.creationRequestForAsset(from: image)
+                
+                // Add the new asset to the album
+                let albumChangeRequest = PHAssetCollectionChangeRequest(for: album)
+                albumChangeRequest?.addAssets([assetRequest.placeholderForCreatedAsset!] as NSFastEnumeration)
+            } completionHandler: { success, error in
+                if let error = error { cont.resume(throwing: error) }
+                else if success { cont.resume() }
+                else { cont.resume(throwing: NSError(domain: "Album", code: -4)) }
             }
         }
     }

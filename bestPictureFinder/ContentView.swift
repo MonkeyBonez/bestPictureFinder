@@ -22,6 +22,7 @@ struct ContentView: View {
     @State private var compactToolbar: Bool = false
     @State private var leftSlotWidth: CGFloat = 0
     @State private var rightSlotWidth: CGFloat = 0
+    private let toolbarSpacing: CGFloat = 21
     
     var navTitle: String {
         let selectedCount = viewModel.selectedIds.count
@@ -34,6 +35,10 @@ struct ContentView: View {
         }
         
         return "\(selectedCount) photos selected"
+    }
+    
+    var isFullscreen: Bool {
+        overlayPresentation != nil
     }
 
     var body: some View {
@@ -82,38 +87,77 @@ struct ContentView: View {
                     // (Moved) Create Album action is now in the bottom toolbar
                 }
             }
-            .navigationTitle(navTitle)
+            .navigationTitle(isFullscreen ? "" : navTitle)
             .navigationBarTitleDisplayMode(.inline)
-        }
-//            .toolbarBackground(.visible, for: .navigationBar)
-//            .toolbarBackground(DesignColors.appBackground, for: .navigationBar)
-//            .toolbarBackground(.visible, for: .navigationBar)
-//            .toolbarBackground(DesignColors.appBackground, for: .bottomBar)
-//            .toolbarBackground(.visible, for: .bottomBar)
+            
+            //            .toolbarBackground(.visible, for: .navigationBar)
+            //            .toolbarBackground(DesignColors.appBackground, for: .navigationBar)
+            //            .toolbarBackground(.visible, for: .navigationBar)
+            //            .toolbarBackground(DesignColors.appBackground, for: .bottomBar)
+            //            .toolbarBackground(.visible, for: .bottomBar)
             .toolbar {
-                // Sticky header placeholder (top bar)
-//                ToolbarItem(placement: .topBarLeading) {
-//                    Color.clear.frame(width: 1, height: 44)
-//                        .accessibilityHidden(true)
-//                }
-//                ToolbarItem(placement: .topBarTrailing) {
-//                    Color.clear.frame(width: 1, height: 44)
-//                        .accessibilityHidden(true)
-//                }
 
+                // Sticky header placeholder (top bar)
+                //                ToolbarItem(placement: .topBarLeading) {
+                //                    Color.clear.frame(width: 1, height: 44)
+                //                        .accessibilityHidden(true)
+                //                }
+                if !isFullscreen {
+                    ToolbarItem(placement: .topBarTrailing) {
+                        Menu {
+                            // "Select Top 5"
+                            if viewModel.processedImages.count >= 5 {
+                                Button("Select Top 5") {
+                                    viewModel.selectTop(count: 5)
+                                }
+                            }
+                            // "Select Top 10"
+                            if viewModel.processedImages.count >= 10 {
+                                Button("Select Top 10") {
+                                    viewModel.selectTop(count: 10)
+                                }
+                            }
+                            // "Select Top 20"
+                            if viewModel.processedImages.count >= 20 {
+                                Button("Select Top 20") {
+                                    viewModel.selectTop(count: 20)
+                                }
+                            }
+                            // "Select All" (always shown)
+                            if !viewModel.processedImages.isEmpty {
+                                Button("Select All") {
+                                    viewModel.selectAll()
+                                }
+                            }
+                            
+                            if !viewModel.selectedIds.isEmpty {
+                                Button("Deselect All") {
+                                    viewModel.deselectAll()
+                                }
+                            }
+                            
+                        } label: {
+                            Image(systemName: "ellipsis.circle.fill")
+                        }
+                        .font(.headline)
+                        .tint(DesignColors.vividLavender)
+                        .disabled(viewModel.processedImages.count == 0)
+                        
+                    }
+                }
                 // Bottom toolbar actions with in-place sliding/fade animations
                 ToolbarItemGroup(placement: .bottomBar) {
-                    let isFullscreen = overlayPresentation != nil
+                    //                    let isFullscreen = overlayPresentation != nil
                     let current: ProcessedImage? = overlayPresentation.flatMap { overlay in
                         viewModel.processedImages.first { $0.id == overlay.sourceId }
                     }
-
+                    
                     // Left side group (Create Album + Share)
-                    HStack(spacing: 18) {
+                    HStack(spacing: toolbarSpacing) {
                         // Create Album: present normally in list; during fullscreen keep only during animation, then remove
                         if !isFullscreen {
                             Button("Create Album", systemImage: "photo.stack") {
-                                Task { await viewModel.createAlbum() }
+                                viewModel.showAlbumNamePrompt()
                             }
                             .disabled(viewModel.selectedIds.isEmpty || viewModel.isProcessing)
                             .tint(DesignColors.sunYellow)
@@ -128,31 +172,32 @@ struct ContentView: View {
                             )
                         } else if !compactToolbar {
                             Button("Create Album", systemImage: "photo.stack") {
-                                Task { await viewModel.createAlbum() }
+                                viewModel.showAlbumNamePrompt()
                             }
                             .disabled(true)
                             .opacity(0)
                             .offset(x: -24)
                             .accessibilityHidden(true)
                         }
-
+                        
                         // Share switches behavior based on mode
                         Button("Share", systemImage: "square.and.arrow.up.fill") {
                             if let current { Task { await viewModel.share(image: current) } }
                             else { Task { await viewModel.shareSelected() } }
                         }
                         .disabled(isFullscreen ? (current == nil || viewModel.isProcessing)
-                                               : (viewModel.selectedIds.isEmpty || viewModel.isProcessing))
+                                  : (viewModel.selectedIds.isEmpty || viewModel.isProcessing))
                         .tint(.accentColor)
                         .accessibilityLabel(isFullscreen ? "Share This Photo" : "Share Selected Photos")
-                        .offset(x: (isFullscreen && !compactToolbar) ? -(leftSlotWidth + 18) : 0, y: -2)
+                        .offset(x: (isFullscreen && !compactToolbar) ? -(leftSlotWidth + toolbarSpacing) + 1 : 0, y: (isFullscreen && !compactToolbar) ? 0 : -2)
                     }
+                    .font(.headline)
                     .animation(.spring(response: 0.28, dampingFraction: 0.9), value: isFullscreen)
-
+                    
                     Spacer()
-
+                    
                     // Right side group (Remove + Add Photos)
-                    HStack(spacing: 18) {
+                    HStack(spacing: toolbarSpacing) {
                         // Remove switches label/behavior but stays in place
                         Button(isFullscreen ? "Remove" : "Remove Selected", systemImage: "minus.circle.fill") {
                             if let current, isFullscreen {
@@ -166,7 +211,8 @@ struct ContentView: View {
                         .tint(.red)
                         .disabled(isFullscreen ? viewModel.isProcessing : viewModel.selectedIds.isEmpty)
                         .accessibilityLabel(isFullscreen ? "Remove This Photo" : "Remove Selected Photos")
-
+                        .offset(x: (isFullscreen && !compactToolbar) ? (rightSlotWidth + toolbarSpacing) - 1: 0)
+                        
                         // Add Photos: present normally in list; during fullscreen keep only during animation, then remove
                         if !isFullscreen {
                             Button("Add Photos", systemImage: "plus.circle.fill") {
@@ -194,6 +240,7 @@ struct ContentView: View {
                             .accessibilityHidden(true)
                         }
                     }
+                    .font(.headline)
                     .animation(.spring(response: 0.28, dampingFraction: 0.9), value: isFullscreen)
                     .overlay(
                         // Move Remove to the right slot during transition
@@ -203,44 +250,65 @@ struct ContentView: View {
                     )
                 }
             }
-        
-        .alert("Alert", isPresented: .constant(!viewModel.alertMessage.isEmpty)) {
-            Button("OK") { }
-        } message: {
-            Text(viewModel.alertMessage)
-        }
-        .sheet(isPresented: $viewModel.isPresentingShareSheet, content: {
-            ShareSheet(activityItems: viewModel.shareItems)
-        })
-        .sheet(isPresented: $showIOSAssetPicker) {
-            IOSAssetPicker(isPresented: $showIOSAssetPicker) { results in
-                pendingIOSPickerResults = results
-                Task { await processIOSPickerResults(results) }
+            
+            .alert("Alert", isPresented: .constant(!viewModel.alertMessage.isEmpty)) {
+                Button("OK") { }
+            } message: {
+                Text(viewModel.alertMessage)
             }
-        }
-        .overlay(alignment: .center) {
-            if let overlayPresentation {
-                FullScreenImageView(
-                    images: overlayPresentation.images,
-                    index: overlayPresentation.index,
-                    onClose: {
-                                withAnimation(.spring(response: 0.2, dampingFraction: 1.0)) {
-                            self.overlayPresentation = nil
-                        }
-                                // After the slide/fade animation, collapse toolbar to compact layout
-                                DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
-                                    compactToolbar = false
-                                }
-                            },
-                    heroNamespace: heroNS,
-                    sourceId: overlayPresentation.sourceId,
-                    targetThumbnailFrame: thumbnailFrames[overlayPresentation.sourceId]
-                )
-                .ignoresSafeArea()
-//                .transition(.opacity.combined(with: .scale(scale: 0.20)))
+            .alert("Name Your Album", isPresented: $viewModel.isPresentingAlbumNamePrompt) {
+                TextField("Album Name", text: $viewModel.albumNameInput)
+                Button("Cancel", role: .cancel) { }
+                Button("Create", role: .confirm) {
+                    Task { await viewModel.createAlbum() }
+                }
+            } message: {
+                Text("Aesthetically sorted photo album")
             }
+            .sheet(isPresented: $viewModel.isPresentingShareSheet, content: {
+                ShareSheet(activityItems: viewModel.shareItems)
+            })
+            .sheet(isPresented: $showIOSAssetPicker) {
+                IOSAssetPicker(isPresented: $showIOSAssetPicker) { results in
+                    pendingIOSPickerResults = results
+                    Task { await processIOSPickerResults(results) }
+                }
+            }
+            .overlay(alignment: .center) {
+                if let overlayPresentation {
+                    FullScreenImageView(
+                        images: overlayPresentation.images,
+                        index: overlayPresentation.index,
+                        onClose: {
+                            withAnimation(.spring(response: 0.2, dampingFraction: 1.0)) {
+                                self.overlayPresentation = nil
+                            }
+                            // After the slide/fade animation, collapse toolbar to compact layout
+                            DispatchQueue.main.asyncAfter(deadline: .now() + 0.3) {
+                                compactToolbar = false
+                            }
+                        },
+                        heroNamespace: heroNS,
+                        sourceId: overlayPresentation.sourceId,
+                        targetThumbnailFrame: thumbnailFrames[overlayPresentation.sourceId]
+                    )
+                    .ignoresSafeArea()
+                    //                .transition(.opacity.combined(with: .scale(scale: 0.20)))
+                }
+            }
+            .overlay(alignment: .top) {
+                if !viewModel.toastMessage.isEmpty {
+                    LiquidGlassToast(message: viewModel.toastMessage) {
+                        viewModel.toastMessage = ""
+                        // Maintain compatibility if legacy flag is still used anywhere
+                        viewModel.isShowingToast = false
+                    }
+                    .padding(.top, 10)
+                    .id(viewModel.toastMessage)
+                }
+            }
+            //        .animation(.easeInOut(duration: 1.0), value: overlayPresentation != nil)
         }
-//        .animation(.easeInOut(duration: 1.0), value: overlayPresentation != nil)
     }
 
     // iOS image loading helper and picker processing
@@ -321,4 +389,3 @@ struct ShareSheet: UIViewControllerRepresentable {
     }
     func updateUIViewController(_ uiViewController: UIActivityViewController, context: Context) { }
 }
-

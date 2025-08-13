@@ -6,9 +6,13 @@
 	objectVersion = 77;
 	objects = {
 
+/* Begin PBXBuildFile section */
+		3663C06A2E4C27FD007599A2 /* bestPictureFinderiOS-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3663C0692E4C27FD007599A2 /* bestPictureFinderiOS-Info.plist */; };
+/* End PBXBuildFile section */
+
 /* Begin PBXFileReference section */
+		3663C0692E4C27FD007599A2 /* bestPictureFinderiOS-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = "bestPictureFinderiOS-Info.plist"; sourceTree = "<group>"; };
 		36A44A172E458F3C0063CD33 /* bestPictureFinderiOS.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = bestPictureFinderiOS.app; sourceTree = BUILT_PRODUCTS_DIR; };
-		36A44A272E4591220063CD33 /* bestPictureFinderiOS-Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist; path = "bestPictureFinderiOS-Info.plist"; sourceTree = "<group>"; };
 /* End PBXFileReference section */
 
 /* Begin PBXFileSystemSynchronizedBuildFileExceptionSet section */
@@ -25,6 +29,7 @@
 				ViewModels/PhotoResultsViewModel.swift,
 				Views/Components/RatingBadgeView.swift,
 				Views/Components/ThumbnailView.swift,
+				Views/Components/LiquidGlassToast.swift,
 				Views/FullScreenImageView.swift,
 				Views/PhotoResultsListView.swift,
 			);
@@ -57,7 +62,7 @@
 		3607A8E42E45832B00A8673D = {
 			isa = PBXGroup;
 			children = (
-				36A44A272E4591220063CD33 /* bestPictureFinderiOS-Info.plist */,
+				3663C0692E4C27FD007599A2 /* bestPictureFinderiOS-Info.plist */,
 				3607A8EF2E45832B00A8673D /* bestPictureFinder */,
 				3607A8EE2E45832B00A8673D /* Products */,
 			);
@@ -132,6 +137,7 @@
 			isa = PBXResourcesBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				3663C06A2E4C27FD007599A2 /* bestPictureFinderiOS-Info.plist in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

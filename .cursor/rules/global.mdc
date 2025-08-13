@@ -48,3 +48,6 @@ alwaysApply: true
 - FE Rules: /.cursor/rules/frontend.mdc
 - BE Rules: /.cursor/rules/backend.mdc
 - Design/Psych Spec: /docs/design_spec.md
+
+## Building & Testing
+After making any code changes build the project (do not run it) and check for errors - if there are any, attempt a fix if you are confident in what to do.

@@ -2,6 +2,7 @@
 
 ## 1. Overview
 This application aims to provide users with an objective opinion on their photos, helping them to **shortlist images for sharing**. The primary business goal for this standalone product is to **drive traffic and user acquisition**, focusing on providing a **great user experience** to address a common need. It is not currently part of a larger project.
+App name: Aesthesis
 \- **Platform**: iOS-only, targeting **iOS 18+**.
 
 ## 2. Goals & Success Criteria
