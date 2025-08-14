@@ -238,8 +238,8 @@ struct ContentView: View {
                                 viewModel.delete(image: current)
                                 overlayPresentation = nil
                             } else {
-                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
-                                removeSelectedPhotos()
+                                UIImpactFeedbackGenerator(style: .light).impactOccurred()
+                                viewModel.deleteSelected()
                             }
                         }
                         .labelStyle(.iconOnly)

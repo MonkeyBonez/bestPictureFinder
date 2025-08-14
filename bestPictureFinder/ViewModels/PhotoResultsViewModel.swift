@@ -88,15 +88,21 @@ final class PhotoResultsViewModel: ObservableObject {
 
     func selectTop(count: Int) {
         let limited = max(0, min(count, processedImages.count))
-        selectedIds = Set(processedImages.prefix(limited).map { $0.id })
+        withAnimation(.none) {
+            selectedIds = Set(processedImages.prefix(limited).map { $0.id })
+        }
     }
 
     func selectAll() {
-        selectedIds = Set(processedImages.map { $0.id })
+        withAnimation(.none) {
+            selectedIds = Set(processedImages.map { $0.id })
+        }
     }
     
     func deselectAll() {
-        selectedIds = Set()
+        withAnimation(.none) {
+            selectedIds = Set()
+        }
     }
 
     func delete(image: ProcessedImage) {

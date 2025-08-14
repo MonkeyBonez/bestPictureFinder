@@ -24,8 +24,7 @@ struct PhotoResultsListView: View {
     var body: some View {
         ZStack {
             List {
-                ForEach(processedImages.indices, id: \.self) { index in
-                    let image = processedImages[index]
+                ForEach(Array(processedImages.enumerated()), id: \.element.id) { index, image in
                     ImageResultRow(
                         image: image,
                         rank: index + 1,
@@ -75,6 +74,7 @@ struct PhotoResultsListView: View {
             .listRowSpacing(12)
             .scrollContentBackground(.hidden)
             .padding(.horizontal, 24)
+            .animation(nil, value: selectedIds)
         }
 //        .frame(maxHeight: 520)no 
         .background(DesignColors.appBackground(for: colorScheme))
@@ -158,7 +158,6 @@ struct ImageResultRow: View {
         }
         .padding(.vertical, 3)
         .padding(.horizontal, 12)
-        .animation(.spring(response: 0.18, dampingFraction: 0.9), value: isSelected)
         .animation(.spring(response: 0.12, dampingFraction: 0.9), value: tapPulse)
     }
 
