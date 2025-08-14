@@ -1,0 +1,67 @@
+{
+  "fill" : "system-light",
+  "groups" : [
+    {
+      "hidden" : false,
+      "layers" : [
+        {
+          "image-name" : "f733ddf0-23a6-4d7a-8a86-9da6b8cebcf9.png",
+          "name" : "f733ddf0-23a6-4d7a-8a86-9da6b8cebcf9",
+          "position" : {
+            "scale" : 0.55,
+            "translation-in-points" : [
+              -0.43894220380682886,
+              3.5519665176473154
+            ]
+          }
+        },
+        {
+          "blend-mode" : "darken",
+          "fill" : {
+            "linear-gradient" : [
+              "display-p3:0.00000,0.00000,0.00000,1.00000",
+              "display-p3:0.00000,0.07294,0.23703,1.00000"
+            ]
+          },
+          "glass-specializations" : [
+            {
+              "value" : true
+            },
+            {
+              "appearance" : "light",
+              "value" : true
+            },
+            {
+              "appearance" : "dark",
+              "value" : true
+            }
+          ],
+          "hidden" : false,
+          "image-name" : "0ccc6fd4-84ad-4f5d-a5bb-9443c1367cd3.png",
+          "name" : "0ccc6fd4-84ad-4f5d-a5bb-9443c1367cd3",
+          "opacity" : 1,
+          "position" : {
+            "scale" : 1,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        }
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    }
+  ],
+  "supported-platforms" : {
+    "squares" : [
+      "iOS"
+    ]
+  }
+}
