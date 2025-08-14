@@ -1,18 +1,30 @@
 import SwiftUI
+import UIKit
+
+enum ToastHapticStyle {
+    case none
+    case soft
+    case light
+    case medium
+}
 
 struct LiquidGlassToast: View {
     let message: String
+    var dropTime: TimeInterval = 1.2
     var expansionDuration: TimeInterval = 0.5
-    var overshootFactor: CGFloat = 1.07
+    var overshootFactor: CGFloat = 1.055
     var contractionDuration: TimeInterval = 2.3
-    var holdDuration: TimeInterval? = 0.3
+    var holdDuration: TimeInterval? = 0.4
     var closeDuration: TimeInterval = 0.35
     var tapToClose: Bool = true
+    var hapticStyle: UIImpactFeedbackGenerator.FeedbackStyle? = .soft
     var onDismiss: (() -> Void)? = nil
     
     @State private var measuredWidth: CGFloat = 0
+    @State private var measuredHeight: CGFloat = 0
     @State private var currentWidth: CGFloat = 0
     @State private var textOpacity: Double = 0
+    @State private var outerOpacity: Double = 0
     @State private var hasAnimatedOpen: Bool = false
     @State private var isClosingRequested: Bool = false
     @State private var contractionWorkItem: DispatchWorkItem? = nil
@@ -30,6 +42,7 @@ struct LiquidGlassToast: View {
                         Color.clear
                             .onAppear {
                                 measuredWidth = proxy.size.width
+                                measuredHeight = proxy.size.height
                                 if !hasAnimatedOpen && !message.isEmpty {
                                     hasAnimatedOpen = true
                                     startOpenAnimation()
@@ -37,6 +50,7 @@ struct LiquidGlassToast: View {
                             }
                             .onChange(of: message) { newValue in
                                 measuredWidth = proxy.size.width
+                                measuredHeight = proxy.size.height
                                 cancelScheduledAnimations()
                                 isClosingRequested = false
                                 if newValue.isEmpty {
@@ -62,10 +76,10 @@ struct LiquidGlassToast: View {
                     .opacity(textOpacity)
             }
             .frame(width: max(currentWidth, 0), alignment: .center)
-            .opacity(currentWidth > 0 ? 1 : 0.001)
             .clipped()
             .background(.bar, in: Capsule())
             .glassEffect()
+            .opacity(outerOpacity)
             .contentShape(Capsule())
             .onTapGesture {
                 guard tapToClose else { return }
@@ -80,33 +94,52 @@ struct LiquidGlassToast: View {
 
 
     private func startOpenAnimation() {
-        currentWidth = 0
+        // Optional haptic on show
+        // Show an empty pill during drop by keeping width equal to height
+        let baselineWidth = max(measuredHeight, 28)
+        currentWidth = baselineWidth
         textOpacity = 0
-        // 1) Expand with slight overshoot
-        withAnimation(.easeOut(duration: expansionDuration)) {
-            currentWidth = max(measuredWidth * overshootFactor, 0)
+        outerOpacity = 0
+        // 0) Drop-in fade before expand
+        if dropTime > 0 {
+            withAnimation(.easeOut(duration: dropTime)) { outerOpacity = 1 }
+        } else {
+            outerOpacity = 1
         }
-        // Fade text in during expand
-        withAnimation(.easeIn(duration: expansionDuration)) {
-            textOpacity = 1
-        }
-        // 2) After expand, decay back to target width
-        let contraction = DispatchWorkItem {
+
+        let startExpand = DispatchWorkItem {
+            if let hapticStyle = hapticStyle {
+                UIImpactFeedbackGenerator(style: hapticStyle).impactOccurred()
+            }
             if isClosingRequested { return }
-            withAnimation(.easeOut(duration: contractionDuration)) {
-                currentWidth = max(measuredWidth, 0)
+            // 1) Expand with slight overshoot
+            withAnimation(.easeOut(duration: expansionDuration)) {
+                currentWidth = max(measuredWidth * overshootFactor, 0)
             }
-            // 3) After decay + hold, close
-            let hold = max(0, holdDuration ?? 0)
-            let closeItem = DispatchWorkItem {
+            // Fade text in during expand
+            withAnimation(.easeIn(duration: expansionDuration)) {
+                textOpacity = 1
+            }
+            // 2) After expand, decay back to target width
+            let contraction = DispatchWorkItem {
                 if isClosingRequested { return }
-                startCloseAnimation()
+                withAnimation(.easeOut(duration: contractionDuration)) {
+                    currentWidth = max(measuredWidth, 0)
+                }
+                // 3) After decay + hold, close
+                let hold = max(0, holdDuration ?? 0)
+                let closeItem = DispatchWorkItem {
+                    if isClosingRequested { return }
+                    startCloseAnimation()
+                }
+                closeWorkItem = closeItem
+                DispatchQueue.main.asyncAfter(deadline: .now() + contractionDuration + hold, execute: closeItem)
             }
-            closeWorkItem = closeItem
-            DispatchQueue.main.asyncAfter(deadline: .now() + contractionDuration + hold, execute: closeItem)
+            contractionWorkItem = contraction
+            DispatchQueue.main.asyncAfter(deadline: .now() + expansionDuration, execute: contraction)
         }
-        contractionWorkItem = contraction
-        DispatchQueue.main.asyncAfter(deadline: .now() + expansionDuration, execute: contraction)
+
+        DispatchQueue.main.asyncAfter(deadline: .now() + max(0, dropTime), execute: startExpand)
     }
 
     private func startCloseAnimation() {

@@ -7,6 +7,7 @@
 
 import SwiftUI
 import Photos
+import UIKit
 
 struct PhotoResultsListView: View {
     let processedImages: [ProcessedImage]
@@ -36,7 +37,7 @@ struct PhotoResultsListView: View {
                         activeSourceId: activeSourceId,
                         onReportThumbnailFrame: onReportThumbnailFrame
                     )
-                    .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
+//                    .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
                     .onTapGesture { onToggleSelection(image) }
                     .swipeActions(edge: .trailing, allowsFullSwipe: true) {
                         Button(role: .destructive) { onDelete(image) } label: {
@@ -68,6 +69,7 @@ struct PhotoResultsListView: View {
             .listStyle(.plain)
             .listRowSpacing(12)
             .scrollContentBackground(.hidden)
+            .padding(.horizontal, 24)
         }
 //        .frame(maxHeight: 520)
         .background(DesignColors.appBackground.ignoresSafeArea())
@@ -85,13 +87,14 @@ struct ImageResultRow: View {
     let heroNamespace: Namespace.ID
     let activeSourceId: String?
     let onReportThumbnailFrame: (_ id: String, _ frameInScreen: CGRect) -> Void
+    @State private var tapPulse: Bool = false
 
     var body: some View {
-        HStack(spacing: 14) {
+        HStack(spacing: 20) {
             ThumbnailView(
                 image: image.image,
                 size: 80,
-                cornerRadius: 10,
+                cornerRadius: 15,
                 matchedGeometryId: image.id,
                 heroNamespace: heroNamespace
             )
@@ -106,21 +109,48 @@ struct ImageResultRow: View {
                 }
             )
             .onTapGesture { onOpenOverlay(allImages.map { $0.image }, currentIndex, image.id) }
-            CircleRatingView(
-                rating: normalizedScore05(from: image.score),
-                fillColor: rankHueColor(for: image.score)
+            .shadow(
+                color: Color.black.opacity(0.4),
+                radius: 4,
+                x: 0,
+                y: 3
             )
-            Spacer()
-            Button(action: onToggleSelection) {
-                Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
-                    .font(.system(size: 26))
+            .scaleEffect(tapPulse ? 0.98 : 1.0)
+            HStack(spacing: 14) {
+                CircleRatingView(
+                    rating: normalizedScore05(from: image.score),
+                    fillColor: rankHueColor(for: image.score)
+                )
+                .shadow(
+                    color: isSelected ? Color.black.opacity(0.18) : .clear,
+                    radius: 6,
+                    x: 0,
+                    y: 3
+                )
+                .scaleEffect(tapPulse ? 0.98 : 1.0)
+                Spacer(minLength: 0)
+                Button(action: performToggleSelectionHaptic) {
+                    Image(systemName: isSelected ? "checkmark.circle.fill" : "circle")
+                        .font(.system(size: 26))
+                        .scaleEffect((isSelected ? 1.08 : 1.0) * (tapPulse ? 1.12 : 1.0))
+                }
+                .buttonStyle(.plain)
+                .foregroundColor(isSelected ? rankHueColor(for: image.score) : .secondary)
+                .accessibilityLabel(isSelected ? "Selected" : "Not selected")
+                .shadow(
+                    color: isSelected ? Color.black.opacity(0.24) : .clear,
+                    radius: 6,
+                    x: 0,
+                    y: 3
+                )
             }
-            .buttonStyle(.plain)
-            .foregroundColor(isSelected ? rankHueColor(for: image.score) : .secondary)
-            .accessibilityLabel(isSelected ? "Selected" : "Not selected")
+            .contentShape(Rectangle())
+            .onTapGesture(perform: performToggleSelectionHaptic)
         }
         .padding(.vertical, 3)
-        .padding(.horizontal, 8)
+        .padding(.horizontal, 12)
+        .animation(.spring(response: 0.18, dampingFraction: 0.9), value: isSelected)
+        .animation(.spring(response: 0.12, dampingFraction: 0.9), value: tapPulse)
     }
 
     // Per design: map score to hue from Red (0°) through Yellow (60°) to Green (120°)
@@ -135,14 +165,26 @@ struct ImageResultRow: View {
         let clamped = max(-100.0, min(100.0, rawScore))
         return ((clamped + 100.0) / 200.0) * 5.0
     }
+
+    // MARK: - Haptics
+    private func performToggleSelectionHaptic() {
+        UIImpactFeedbackGenerator(style: .light).impactOccurred()
+        tapPulse = true
+        withAnimation(.spring(response: 0.16, dampingFraction: 0.9)) {
+            onToggleSelection()
+        }
+        DispatchQueue.main.asyncAfter(deadline: .now() + 0.14) {
+            tapPulse = false
+        }
+    }
 }
 
 // Fractional 0..5 circle rating view with exact fill amount across five circles
 struct CircleRatingView: View {
     let rating: Double // expected 0..5
     var fillColor: Color = .yellow
-    private let circleSize: CGFloat = 10
-    private let spacing: CGFloat = 4
+    private let circleSize: CGFloat = 14
+    private let spacing: CGFloat = 4.5
 
     var body: some View {
         HStack(spacing: spacing) {

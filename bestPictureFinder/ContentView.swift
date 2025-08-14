@@ -90,7 +90,7 @@ struct ContentView: View {
                     
                     // (Moved) Create Album action is now in the bottom toolbar
                 } else {
-                    VStack(spacing: 12) {
+                    VStack(spacing: 4) {
                         Image(systemName: "photo.badge.plus")
                             .font(.system(size: 60, weight: .regular))
                             .foregroundStyle(.secondary)
@@ -128,30 +128,35 @@ struct ContentView: View {
                             // "Select Top 5"
                             if viewModel.processedImages.count >= 5 {
                                 Button("Select Top 5") {
+                                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                                     viewModel.selectTop(count: 5)
                                 }
                             }
                             // "Select Top 10"
                             if viewModel.processedImages.count >= 10 {
                                 Button("Select Top 10") {
+                                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                                     viewModel.selectTop(count: 10)
                                 }
                             }
                             // "Select Top 20"
                             if viewModel.processedImages.count >= 20 {
                                 Button("Select Top 20") {
+                                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                                     viewModel.selectTop(count: 20)
                                 }
                             }
                             // "Select All" (always shown)
                             if !viewModel.processedImages.isEmpty {
                                 Button("Select All") {
+                                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                                     viewModel.selectAll()
                                 }
                             }
                             
                             if !viewModel.selectedIds.isEmpty {
                                 Button("Deselect All") {
+                                 UIImpactFeedbackGenerator(style: .medium).impactOccurred()
                                     viewModel.deselectAll()
                                 }
                             }
@@ -224,6 +229,7 @@ struct ContentView: View {
                                 viewModel.delete(image: current)
                                 overlayPresentation = nil
                             } else {
+                                 UIImpactFeedbackGenerator(style: .light).impactOccurred()
                                 removeSelectedPhotos()
                             }
                         }
