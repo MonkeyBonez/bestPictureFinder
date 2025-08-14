@@ -28,6 +28,7 @@
 				Services/PhotoLibraryService.swift,
 				Services/VisionScoringService.swift,
 				ViewModels/PhotoResultsViewModel.swift,
+				Views/Components/CircularProgressView.swift,
 				Views/Components/LiquidGlassToast.swift,
 				Views/Components/RatingBadgeView.swift,
 				Views/Components/ThumbnailView.swift,

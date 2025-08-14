@@ -15,6 +15,10 @@ struct FullScreenImageView: View {
     let sourceId: String?
     let targetThumbnailFrame: CGRect?
     @State private var isClosing: Bool = false
+    @State private var animCornerRadius: CGFloat = 15
+    private let thumbnailCornerRadius: CGFloat = 15
+    private let fullscreenCornerRadius: CGFloat = 12
+    @State private var isOpening: Bool = false
 
     // Explicit initializer so callers can pass the starting index despite @State
     init(images: [UIImage], index: Int, onClose: (() -> Void)? = nil, heroNamespace: Namespace.ID? = nil, sourceId: String? = nil, targetThumbnailFrame: CGRect? = nil) {
@@ -35,19 +39,19 @@ struct FullScreenImageView: View {
 
             Image(uiImage: images[index])
                 .resizable()
-                .clipShape(.containerRelative)
+                .clipShape(RoundedRectangle(cornerRadius: animCornerRadius, style: .continuous))
                 .aspectRatio(contentMode: .fit)
                 .padding(.horizontal, 44)
                 .padding(.vertical, 60)
                 .modifier(MatchedGeometryIfAvailable(id: sourceId, ns: heroNamespace))
                 .opacity(usesLocalAppearAnimation ? (isVisible ? 1 : 0) : 1)
-                .scaleEffect(isClosing ? scaleDuringClose : (usesLocalAppearAnimation ? (isVisible ? 1.0 : 0.99) : 1.0), anchor: .center)
+                .scaleEffect(isClosing ? scaleDuringClose : (isOpening ? scaleDuringOpen : 1.0), anchor: .center)
                 .background(FrameReader())
-                .offset(closeOffset)
+                .offset(isClosing ? closeOffset : (isOpening ? openOffset : .zero))
                 .ignoresSafeArea()
                 .animation(.easeInOut(duration: 0.2), value: index)
-                .animation(.easeInOut(duration: 0.2), value: isVisible)
-                .animation(.spring(response: 0.35, dampingFraction: 0.9), value: isClosing)
+                .animation(.easeInOut(duration: 0.3), value: isVisible)
+                .animation(.spring(response: 0.26, dampingFraction: 0.95), value: isClosing)
 
 //            Button(action: { dismiss() }) {
 //                Image(systemName: "xmark.circle.fill")
@@ -60,24 +64,39 @@ struct FullScreenImageView: View {
         }
         .onAppear {
             if usesLocalAppearAnimation {
-                withAnimation(.easeInOut(duration: 0.5)) { isVisible = true }
+                // Start at thumbnail geometry (scale/offset via isOpening=true), fully visible
+                isOpening = true
+                isVisible = true
+                animCornerRadius = thumbnailCornerRadius
+                // Next runloop, animate scale/offset to fullscreen and morph corners together
+                DispatchQueue.main.async {
+                    withAnimation(.spring(response: 0.34, dampingFraction: 0.95)) {
+                        isOpening = false
+                        animCornerRadius = fullscreenCornerRadius
+                    }
+                }
+            } else {
+                animCornerRadius = fullscreenCornerRadius
             }
         }
         .onDisappear {
             // Reset closing flag after the view is removed to avoid a re-render using non-closing path
             isClosing = false
+            animCornerRadius = thumbnailCornerRadius
         }
     }
 
     private func handleClose() {
         if usesLocalAppearAnimation {
-            withAnimation(.easeInOut(duration: 0.2)) { isVisible = false }
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) { isClosing = true }
+            withAnimation(.easeInOut(duration: 0.18)) { isVisible = false }
+            withAnimation(.spring(response: 0.26, dampingFraction: 0.95)) { isClosing = true }
+            withAnimation(.spring(response: 0.26, dampingFraction: 0.95)) { animCornerRadius = thumbnailCornerRadius }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
                 if let onClose { onClose() } else { dismiss() }
             }
         } else {
-            withAnimation(.spring(response: 0.35, dampingFraction: 0.9)) { isClosing = true }
+            withAnimation(.spring(response: 0.26, dampingFraction: 0.95)) { isClosing = true }
+            withAnimation(.spring(response: 0.26, dampingFraction: 0.95)) { animCornerRadius = thumbnailCornerRadius }
             DispatchQueue.main.asyncAfter(deadline: .now() + 0.28) {
                 if let onClose { onClose() } else { dismiss() }
             }
@@ -85,6 +104,12 @@ struct FullScreenImageView: View {
     }
 
     private var usesLocalAppearAnimation: Bool { heroNamespace == nil || sourceId == nil }
+    private var openOffset: CGSize {
+        guard isOpening, let thumb = targetThumbnailFrame, let full = FrameReader.lastFullFrame else { return .zero }
+        let fullCenter = CGPoint(x: full.midX, y: full.midY)
+        let thumbCenter = CGPoint(x: thumb.midX, y: thumb.midY)
+        return CGSize(width: thumbCenter.x - fullCenter.x, height: thumbCenter.y - fullCenter.y)
+    }
     private var closeOffset: CGSize {
         guard isClosing, let thumb = targetThumbnailFrame, let full = FrameReader.lastFullFrame else { return .zero }
         // Compute vector from fullscreen image center to thumbnail center in screen space
@@ -96,7 +121,12 @@ struct FullScreenImageView: View {
         guard isClosing, let thumb = targetThumbnailFrame, let full = FrameReader.lastFullFrame else { return 1.0 }
         let sx = max(0.0001, thumb.width / max(1, full.width))
         let sy = max(0.0001, thumb.height / max(1, full.height))
-        // Use the smaller ratio to maintain aspect without overshooting
+        return max(sx, sy)
+    }
+    private var scaleDuringOpen: CGFloat {
+        guard isOpening, let thumb = targetThumbnailFrame, let full = FrameReader.lastFullFrame else { return 1.0 }
+        let sx = max(0.0001, thumb.width / max(1, full.width))
+        let sy = max(0.0001, thumb.height / max(1, full.height))
         return min(sx, sy)
     }
 

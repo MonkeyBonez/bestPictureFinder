@@ -24,6 +24,7 @@ struct ContentView: View {
     @State private var rightSlotWidth: CGFloat = 0
     @State private var ctaWiggle: Bool = false
     private let toolbarSpacing: CGFloat = 21
+    @Environment(\.colorScheme) private var colorScheme
     
     var navTitle: String {
         let selectedCount = viewModel.selectedIds.count
@@ -48,7 +49,8 @@ struct ContentView: View {
     var body: some View {
         NavigationStack {
             ZStack {
-                DesignColors.appBackground.ignoresSafeArea()
+                DesignColors.appBackground(for: colorScheme)
+                    .ignoresSafeArea()
                 // Results List or empty state
                 if !viewModel.processedImages.isEmpty {
                     ZStack {
@@ -74,16 +76,13 @@ struct ContentView: View {
                         )
                         
                         if viewModel.isProcessing {
-                            VStack(spacing: 8) {
-                                ProgressView().scaleEffect(1.2)
-                                if viewModel.totalPhotos > 0 {
-                                    Text("Analyzing photos… \(viewModel.processingProgress)/\(viewModel.totalPhotos)")
-                                        .font(.caption2)
-                                        .foregroundColor(.secondary)
-                                }
-                            }
-                            .padding(12)
-                            .background(.ultraThinMaterial, in: RoundedRectangle(cornerRadius: 14, style: .continuous))
+                            CircularProgressView(
+                                progress: viewModel.totalPhotos > 0 ? Double(viewModel.processingProgress) / Double(max(1, viewModel.totalPhotos)) : 0,
+                                size: 44,
+                                lineWidth: 6,
+                                trackColor: Color.secondary.opacity(0.2),
+                                progressColor: DesignColors.sunYellow
+                            )
                             .shadow(radius: 10)
                         }
                     }
@@ -234,7 +233,7 @@ struct ContentView: View {
                             }
                         }
                         .labelStyle(.iconOnly)
-                        .tint(.red)
+                        .tint(Color(.systemRed))
                         .disabled(isFullscreen ? viewModel.isProcessing : viewModel.selectedIds.isEmpty)
                         .accessibilityLabel(isFullscreen ? "Remove This Photo" : "Remove Selected Photos")
                         .offset(x: (isFullscreen && !compactToolbar) ? (rightSlotWidth + toolbarSpacing) - 1: 0)

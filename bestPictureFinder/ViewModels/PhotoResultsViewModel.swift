@@ -69,14 +69,16 @@ final class PhotoResultsViewModel: ObservableObject {
                     assetLocalIdentifier: pickedLocalId,
                     asset: nil
                 )
-                processedImages.append(processed)
+                // Insert in score-descending order to keep list sorted as we add
+                let insertIndex = processedImages.firstIndex { $0.score < processed.score } ?? processedImages.count
+                processedImages.insert(processed, at: insertIndex)
                 existingIds.insert(identifier)
             } catch {
                 print("Picker load failed: \(error)")
             }
             processingProgress = idx + 1
         }
-        processedImages.sort { $0.score > $1.score }
+        // Already inserted in order; no final sort needed
         isProcessing = false
     }
 

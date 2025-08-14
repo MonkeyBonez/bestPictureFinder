@@ -19,6 +19,7 @@ struct PhotoResultsListView: View {
     let heroNamespace: Namespace.ID
     let activeSourceId: String?
     let onReportThumbnailFrame: (_ id: String, _ frameInScreen: CGRect) -> Void
+    @Environment(\.colorScheme) private var colorScheme
 
     var body: some View {
         ZStack {
@@ -52,27 +53,31 @@ struct PhotoResultsListView: View {
                     }
                     .listRowBackground(
                         RoundedRectangle(cornerRadius: 30, style: .continuous)
-                            .fill(
-                                selectedIds.contains(image.id)
-                                ? Color(
-                                    hue: (120.0 * max(0.0, min(1.0, (image.score + 100.0) / 200.0))) / 360.0,
-                                    saturation: 0.7,
-                                    brightness: 0.92
-                                  ).opacity(0.18)
-                                : Color.white
-                            )
+                            .fill({ () -> Color in
+                                let isSelected = selectedIds.contains(image.id)
+                                if isSelected {
+                                    let t = max(0.0, min(1.0, (image.score + 100.0) / 200.0))
+                                    let hueDegrees = 120.0 * t
+                                    let hueFraction = hueDegrees / 360.0
+                                    let base = Color(hue: hueFraction, saturation: 0.7, brightness: 0.92)
+                                    return base.opacity(colorScheme == .dark ? 0.40 : 0.18)
+                                } else {
+                                    return Color(colorScheme == .dark ? .secondarySystemBackground : .white)
+                                }
+                            }())
                     )
                     .listRowInsets(EdgeInsets(top: 10, leading: 12, bottom: 10, trailing: 12))
                     .listRowSeparator(.hidden)
                 }
             }
             .listStyle(.plain)
+            .scrollIndicators(.hidden)
             .listRowSpacing(12)
             .scrollContentBackground(.hidden)
             .padding(.horizontal, 24)
         }
-//        .frame(maxHeight: 520)
-        .background(DesignColors.appBackground.ignoresSafeArea())
+//        .frame(maxHeight: 520)no 
+        .background(DesignColors.appBackground(for: colorScheme))
     }
 }
 
@@ -223,7 +228,7 @@ struct LeadingClipShape: Shape {
 #Preview("PhotoResultsListView") {
     PreviewContainer()
         .padding()
-        .background(DesignColors.appBackground)
+        .background(DesignColors.lightModeBackground)
 }
 
 struct PreviewContainer: View {

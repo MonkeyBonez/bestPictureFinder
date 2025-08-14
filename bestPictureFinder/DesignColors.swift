@@ -17,7 +17,13 @@ enum DesignColors {
     static let lightBlue = Color(red: 220/255.0, green: 236/255.0, blue: 247/255.0)
     static let oceanBlue = Color(red: 74/255.0, green: 158/255.0, blue: 238/255.0)
     static let red = Color(red: 235/255.0, green: 77/255.0, blue: 83/255.0)
-    // App background used across screens and previews. Adjust here to theme app.
-    static let appBackground = Color(.systemGray6)
+    // Background palette
+    static let lightModeBackground = Color(.systemGray6)
+    static let darkModeBackground = Color(.systemBackground)
+
+    // Convenience accessor to pick appropriate background
+    static func appBackground(for colorScheme: ColorScheme) -> Color {
+        colorScheme == .dark ? darkModeBackground : lightModeBackground
+    }
 }
 
