@@ -2,27 +2,96 @@
   "fill" : "system-light",
   "groups" : [
     {
+      "layers" : [
+
+      ],
+      "shadow" : {
+        "kind" : "neutral",
+        "opacity" : 0.5
+      },
+      "translucency" : {
+        "enabled" : true,
+        "value" : 0.5
+      }
+    },
+    {
       "hidden" : false,
       "layers" : [
         {
+          "fill-specializations" : [
+            {
+              "value" : {
+                "linear-gradient" : [
+                  "display-p3:0.00000,0.00000,0.00000,1.00000",
+                  "display-p3:0.09889,0.01658,0.30357,1.00000"
+                ]
+              }
+            },
+            {
+              "appearance" : "dark",
+              "value" : {
+                "automatic-gradient" : "display-p3:0.38438,0.29841,0.69835,1.00000"
+              }
+            }
+          ],
+          "hidden" : false,
+          "image-name" : "f733ddf0-23a6-4d7a-8a86-9da6b8cebcf9.png",
+          "name" : "f733ddf0-23a6-4d7a-8a86-9da6b8cebcf9",
+          "position" : {
+            "scale" : 0.3,
+            "translation-in-points" : [
+              0,
+              0
+            ]
+          }
+        },
+        {
+          "fill-specializations" : [
+            {
+              "appearance" : "dark",
+              "value" : "none"
+            }
+          ],
+          "hidden" : false,
           "image-name" : "f733ddf0-23a6-4d7a-8a86-9da6b8cebcf9.png",
           "name" : "f733ddf0-23a6-4d7a-8a86-9da6b8cebcf9",
           "position" : {
             "scale" : 0.55,
             "translation-in-points" : [
-              -0.43894220380682886,
-              3.5519665176473154
+              0,
+              0
             ]
           }
         },
         {
-          "blend-mode" : "darken",
-          "fill" : {
-            "linear-gradient" : [
-              "display-p3:0.00000,0.00000,0.00000,1.00000",
-              "display-p3:0.00000,0.07294,0.23703,1.00000"
-            ]
-          },
+          "blend-mode-specializations" : [
+            {
+              "value" : "darken"
+            },
+            {
+              "appearance" : "dark",
+              "value" : "normal"
+            }
+          ],
+          "fill-specializations" : [
+            {
+              "value" : {
+                "linear-gradient" : [
+                  "display-p3:0.00000,0.00000,0.00000,1.00000",
+                  "display-p3:0.09889,0.01658,0.30357,1.00000"
+                ]
+              }
+            },
+            {
+              "appearance" : "dark",
+              "value" : {
+                "linear-gradient" : [
+                  "display-p3:0.86037,0.86037,0.86037,1.00000",
+                  "display-p3:0.07153,0.00000,0.32764,1.00000"
+                ]
+              }
+            }
+          ],
           "glass-specializations" : [
             {
               "value" : true
@@ -33,6 +102,10 @@
             },
             {
               "appearance" : "dark",
+              "value" : true
+            },
+            {
+              "appearance" : "tinted",
               "value" : true
             }
           ],
