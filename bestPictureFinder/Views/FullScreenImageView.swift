@@ -19,6 +19,7 @@ struct FullScreenImageView: View {
     private let thumbnailCornerRadius: CGFloat = 15
     private let fullscreenCornerRadius: CGFloat = 12
     @State private var isOpening: Bool = false
+    @Environment(\.accessibilityReduceMotion) private var reduceMotion
 
     // Explicit initializer so callers can pass the starting index despite @State
     init(images: [UIImage], index: Int, onClose: (() -> Void)? = nil, heroNamespace: Namespace.ID? = nil, sourceId: String? = nil, targetThumbnailFrame: CGRect? = nil) {
@@ -35,6 +36,9 @@ struct FullScreenImageView: View {
             Rectangle()
                 .glassEffect(.regular.interactive(), in: .containerRelative)
                 .ignoresSafeArea()
+                .accessibilityLabel("Close fullscreen")
+                .accessibilityAddTraits(.isButton)
+                .accessibilityHint("Dismiss the fullscreen image")
                 .onTapGesture { handleClose() }
 
             Image(uiImage: images[index])
@@ -103,7 +107,7 @@ struct FullScreenImageView: View {
         }
     }
 
-    private var usesLocalAppearAnimation: Bool { heroNamespace == nil || sourceId == nil }
+    private var usesLocalAppearAnimation: Bool { (heroNamespace == nil || sourceId == nil) && !reduceMotion }
     private var openOffset: CGSize {
         guard isOpening, let thumb = targetThumbnailFrame, let full = FrameReader.lastFullFrame else { return .zero }
         let fullCenter = CGPoint(x: full.midX, y: full.midY)

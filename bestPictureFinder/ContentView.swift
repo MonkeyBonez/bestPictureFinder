@@ -76,14 +76,19 @@ struct ContentView: View {
                         )
                         
                         if viewModel.isProcessing {
+                            let pct = viewModel.totalPhotos > 0 ? Double(viewModel.processingProgress) / Double(max(1, viewModel.totalPhotos)) : 0
                             CircularProgressView(
-                                progress: viewModel.totalPhotos > 0 ? Double(viewModel.processingProgress) / Double(max(1, viewModel.totalPhotos)) : 0,
+                                progress: pct,
                                 size: 44,
                                 lineWidth: 6,
                                 trackColor: Color.secondary.opacity(0.2),
                                 progressColor: DesignColors.sunYellow
                             )
                             .shadow(radius: 10)
+                            .accessibilityElement(children: .ignore)
+                            .accessibilityLabel("Analyzing photos")
+                            .accessibilityValue(Text("\(Int(pct * 100)) percent"))
+                            .accessibilityAddTraits(.updatesFrequently)
                         }
                     }
                     
@@ -100,6 +105,9 @@ struct ContentView: View {
                     }
                     .frame(maxWidth: .infinity, maxHeight: .infinity, alignment: .center)
                     .padding(.horizontal, 24)
+                    .accessibilityElement(children: .combine)
+                    .accessibilityLabel("No photos. Add photos to view their aesthetic rankings")
+                    .accessibilityHint("Use the plus button at the bottom right to add photos")
                 }
             }
             .navigationTitle(isFullscreen ? "" : navTitle)
@@ -162,6 +170,7 @@ struct ContentView: View {
                             
                         } label: {
                             Image(systemName: "ellipsis.circle.fill")
+                                .accessibilityLabel("More actions")
                         }
                         .font(.headline)
                         .tint(DesignColors.vividLavender)
@@ -213,6 +222,7 @@ struct ContentView: View {
                                   : (viewModel.selectedIds.isEmpty || viewModel.isProcessing))
                         .tint(.accentColor)
                         .accessibilityLabel(isFullscreen ? "Share This Photo" : "Share Selected Photos")
+                        .accessibilityHint("Opens the share sheet")
                         .offset(x: (isFullscreen && !compactToolbar) ? -(leftSlotWidth + toolbarSpacing) + 1 : 0, y: (isFullscreen && !compactToolbar) ? 0 : -2)
                     }
                     .font(.headline)
@@ -236,6 +246,7 @@ struct ContentView: View {
                         .tint(Color(.systemRed))
                         .disabled(isFullscreen ? viewModel.isProcessing : viewModel.selectedIds.isEmpty)
                         .accessibilityLabel(isFullscreen ? "Remove This Photo" : "Remove Selected Photos")
+                        .accessibilityHint("Deletes the selected photos from this list")
                         .offset(x: (isFullscreen && !compactToolbar) ? (rightSlotWidth + toolbarSpacing) - 1: 0)
                         
                         // Add Photos: present normally in list; during fullscreen keep only during animation, then remove

@@ -114,6 +114,8 @@ struct ImageResultRow: View {
                 }
             )
             .onTapGesture { onOpenOverlay(allImages.map { $0.image }, currentIndex, image.id) }
+            .accessibilityLabel("Open photo fullscreen")
+            .accessibilityHint("Double tap to view and swipe to dismiss")
             .shadow(
                 color: Color.black.opacity(0.4),
                 radius: 4,
@@ -142,6 +144,8 @@ struct ImageResultRow: View {
                 .buttonStyle(.plain)
                 .foregroundColor(isSelected ? rankHueColor(for: image.score) : .secondary)
                 .accessibilityLabel(isSelected ? "Selected" : "Not selected")
+                .accessibilityValue(Text("Score \(String(format: "%.1f", normalizedScore05(from: image.score))) out of 5"))
+                .accessibilityHint("Double tap to toggle selection")
                 .shadow(
                     color: isSelected ? Color.black.opacity(0.24) : .clear,
                     radius: 6,
