@@ -28,10 +28,11 @@ final class PhotoResultsViewModel: ObservableObject {
     private let vision: VisionScoringServiceProtocol
     private let photos: PhotoLibraryServiceProtocol
 
-    init(vision: VisionScoringServiceProtocol = VisionScoringService(),
-         photos: PhotoLibraryServiceProtocol = PhotoLibraryService()) {
-        self.vision = vision
-        self.photos = photos
+    init(vision: VisionScoringServiceProtocol? = nil,
+         photos: PhotoLibraryServiceProtocol? = nil) {
+        // Resolve defaults inside @MainActor init to avoid Swift 6 cross-actor warnings
+        self.vision = vision ?? VisionScoringService()
+        self.photos = photos ?? PhotoLibraryService()
     }
 
     // MARK: - Intents

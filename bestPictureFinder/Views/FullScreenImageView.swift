@@ -34,7 +34,7 @@ struct FullScreenImageView: View {
     var body: some View {
         ZStack(alignment: .center) {
             Rectangle()
-                .glassEffect(.regular.interactive(), in: .containerRelative)
+                .modifier(GlassEffectIfAvailable(style: .regularInteractive))
                 .ignoresSafeArea()
                 .accessibilityLabel("Close fullscreen")
                 .accessibilityAddTraits(.isButton)
@@ -140,7 +140,7 @@ struct FullScreenImageView: View {
             GeometryReader { proxy in
                 Color.clear
                     .onAppear { FrameReader.lastFullFrame = proxy.frame(in: .global) }
-                    .onChange(of: proxy.frame(in: .global)) { newValue in
+                    .onChange(of: proxy.frame(in: .global)) { _, newValue in
                         FrameReader.lastFullFrame = newValue
                     }
             }

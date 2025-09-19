@@ -108,7 +108,7 @@ struct ImageResultRow: View {
                 GeometryReader { proxy in
                     Color.clear
                         .onAppear { onReportThumbnailFrame(image.id, proxy.frame(in: .global)) }
-                        .onChange(of: proxy.frame(in: .global)) { newValue in
+                        .onChange(of: proxy.frame(in: .global)) { _, newValue in
                             onReportThumbnailFrame(image.id, newValue)
                         }
                 }

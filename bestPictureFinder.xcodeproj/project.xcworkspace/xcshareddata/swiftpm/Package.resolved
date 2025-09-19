@@ -1,0 +1,15 @@
+{
+  "originHash" : "34dfade77649dec89d9580ad4b34cde26c8f562ba68911d966edb51856e2789e",
+  "pins" : [
+    {
+      "identity" : "beautiful_ios_components",
+      "kind" : "remoteSourceControl",
+      "location" : "https://github.com/MonkeyBonez/Beautiful_iOS_Components.git",
+      "state" : {
+        "branch" : "main",
+        "revision" : "4eb8bcf8dcf77f2536f0145637982517f5d40e8b"
+      }
+    }
+  ],
+  "version" : 3
+}

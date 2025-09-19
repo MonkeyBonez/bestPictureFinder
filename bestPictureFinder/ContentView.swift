@@ -11,6 +11,7 @@ import Photos
 import UIKit
 import PhotosUI
 import UniformTypeIdentifiers
+import Beautiful_iOS_Components
 
 struct ContentView: View {
     @StateObject private var viewModel = PhotoResultsViewModel()
@@ -200,7 +201,7 @@ struct ContentView: View {
                             .background(
                                 GeometryReader { proxy in
                                     Color.clear.onAppear { leftSlotWidth = proxy.size.width }
-                                        .onChange(of: proxy.size.width) { newValue in leftSlotWidth = newValue }
+                                        .onChange(of: proxy.size.width) { _, newValue in leftSlotWidth = newValue }
                                 }
                             )
                         } else if !compactToolbar {
@@ -262,7 +263,7 @@ struct ContentView: View {
                             .background(
                                 GeometryReader { proxy in
                                     Color.clear.onAppear { rightSlotWidth = proxy.size.width }
-                                        .onChange(of: proxy.size.width) { newValue in rightSlotWidth = newValue }
+                                        .onChange(of: proxy.size.width) { _, newValue in rightSlotWidth = newValue }
                                 }
                             )
                         } else if !compactToolbar {
@@ -295,7 +296,7 @@ struct ContentView: View {
             .alert("Name Your Album", isPresented: $viewModel.isPresentingAlbumNamePrompt) {
                 TextField("Album Name", text: $viewModel.albumNameInput)
                 Button("Cancel", role: .cancel) { }
-                Button("Create", role: .confirm) {
+                Button("Create") {
                     Task { await viewModel.createAlbum() }
                 }
             } message: {

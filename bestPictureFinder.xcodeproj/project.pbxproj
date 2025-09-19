@@ -8,6 +8,7 @@
 
 /* Begin PBXBuildFile section */
 		3663C06A2E4C27FD007599A2 /* bestPictureFinderiOS-Info.plist in Resources */ = {isa = PBXBuildFile; fileRef = 3663C0692E4C27FD007599A2 /* bestPictureFinderiOS-Info.plist */; };
+		366513012E7D0B34008E410E /* Beautiful_iOS_Components in Frameworks */ = {isa = PBXBuildFile; productRef = 366513002E7D0B34008E410E /* Beautiful_iOS_Components */; };
 		367D17822E4D83F400C979E8 /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = 367D17812E4D83F400C979E8 /* PrivacyInfo.xcprivacy */; };
 /* End PBXBuildFile section */
 
@@ -24,7 +25,6 @@
 				bestPictureFinderApp.swift,
 				ContentView.swift,
 				DesignColors.swift,
-				"eye icon.icon",
 				IOSAssetPicker.swift,
 				Models/ProcessedImage.swift,
 				Services/PhotoLibraryService.swift,
@@ -32,6 +32,7 @@
 				ViewModels/PhotoResultsViewModel.swift,
 				Views/Components/CircularProgressView.swift,
 				Views/Components/LiquidGlassToast.swift,
+                Views/Components/GlassEffectIfAvailable.swift,
 				Views/Components/RatingBadgeView.swift,
 				Views/Components/ThumbnailView.swift,
 				Views/FullScreenImageView.swift,
@@ -57,6 +58,7 @@
 			isa = PBXFrameworksBuildPhase;
 			buildActionMask = 2147483647;
 			files = (
+				366513012E7D0B34008E410E /* Beautiful_iOS_Components in Frameworks */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -98,6 +100,7 @@
 			);
 			name = bestPictureFinderiOS;
 			packageProductDependencies = (
+				366513002E7D0B34008E410E /* Beautiful_iOS_Components */,
 			);
 			productName = bestPictureFinderiOS;
 			productReference = 36A44A172E458F3C0063CD33 /* bestPictureFinderiOS.app */;
@@ -127,6 +130,9 @@
 			);
 			mainGroup = 3607A8E42E45832B00A8673D;
 			minimizedProjectReferenceProxies = 1;
+			packageReferences = (
+				366512FF2E7D0B34008E410E /* XCRemoteSwiftPackageReference "Beautiful_iOS_Components" */,
+			);
 			preferredProjectObjectVersion = 77;
 			productRefGroup = 3607A8EE2E45832B00A8673D /* Products */;
 			projectDirPath = "";
@@ -387,6 +393,25 @@
 			defaultConfigurationName = Release;
 		};
 /* End XCConfigurationList section */
+
+/* Begin XCRemoteSwiftPackageReference section */
+		366512FF2E7D0B34008E410E /* XCRemoteSwiftPackageReference "Beautiful_iOS_Components" */ = {
+			isa = XCRemoteSwiftPackageReference;
+			repositoryURL = "https://github.com/MonkeyBonez/Beautiful_iOS_Components.git";
+			requirement = {
+				branch = main;
+				kind = branch;
+			};
+		};
+/* End XCRemoteSwiftPackageReference section */
+
+/* Begin XCSwiftPackageProductDependency section */
+		366513002E7D0B34008E410E /* Beautiful_iOS_Components */ = {
+			isa = XCSwiftPackageProductDependency;
+			package = 366512FF2E7D0B34008E410E /* XCRemoteSwiftPackageReference "Beautiful_iOS_Components" */;
+			productName = Beautiful_iOS_Components;
+		};
+/* End XCSwiftPackageProductDependency section */
 	};
 	rootObject = 3607A8E52E45832B00A8673D /* Project object */;
 }
